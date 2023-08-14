@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
+﻿
 namespace API_Test1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly IAccountReposity _AccountReposity;
-        public AccountController(IAccountReposity accountReposity)
+        private readonly IAccountServices _AccountReposity;
+        public AccountController(IAccountServices accountReposity)
         {
             _AccountReposity = accountReposity;
         }

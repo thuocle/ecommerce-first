@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace API_Test1
+﻿namespace API_Test1
 {
     public class Users
     {

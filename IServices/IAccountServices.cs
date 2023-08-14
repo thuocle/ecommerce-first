@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API_Test1
+namespace API_Test1.IServices
 {
-    public interface IAccountReposity
+    public interface IAccountServices
     {
         public Task<IdentityResult> RegisterAsync(RegisterModel registerModel);
         public Task<IdentityResult> RegisterAdminAsync(RegisterModel registerModel);

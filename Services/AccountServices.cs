@@ -1,23 +1,13 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
-namespace API_Test1
+﻿namespace API_Test1.Services
 {
-    public class AccountReposity : IAccountReposity
+    public class AccountServices : IAccountServices
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
 
-        public AccountReposity(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext)
+        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -26,9 +16,9 @@ namespace API_Test1
 
         }
         //register user
-        public async  Task<IdentityResult> RegisterAsync(RegisterModel registerModel)
+        public async Task<IdentityResult> RegisterAsync(RegisterModel registerModel)
         {
-            ApplicationUser user  = new()
+            ApplicationUser user = new()
             {
                 UserName = registerModel.UserName,
                 Email = registerModel.Email,
@@ -49,7 +39,7 @@ namespace API_Test1
             if (userNameExist != null || emailExist != null)
                 return IdentityResult.Failed(new IdentityError { Description = "UserName hoac Email da duoc dung" });
             if (registerModel.PassWord != registerModel.ConfirmPassWord)
-                return IdentityResult.Failed(new IdentityError { Description = "Mat khau khong khop"});
+                return IdentityResult.Failed(new IdentityError { Description = "Mat khau khong khop" });
             _dbContext.Add(user1);
             _dbContext.SaveChangesAsync();
             var result = await _userManager.CreateAsync(user, registerModel.PassWord);
@@ -67,13 +57,14 @@ namespace API_Test1
             }
             return IdentityResult.Success;
         }
-        public async Task<string> GenerateTokenAsync(ApplicationUser user)
+        //generate token for authentication on login
+        public async Task<string> GenerateAuthenTokenAsync(ApplicationUser user)
         {
             var userRoles = await _userManager.GetRolesAsync(user);
             var authClaims = new List<Claim>
     {
         new Claim(ClaimTypes.Name, user.UserName),
-        new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
             foreach (var userRole in userRoles)
             {
@@ -98,7 +89,7 @@ namespace API_Test1
             var user = await _userManager.FindByNameAsync(loginModel.UserName);
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.PassWord))
             {
-                var token = await GenerateTokenAsync(user);
+                var token = await GenerateAuthenTokenAsync(user);
                 return token;
             }
             return MessageStatus.Fail.ToString();
@@ -114,15 +105,14 @@ namespace API_Test1
             };
             var userNameExist = await _userManager.FindByNameAsync(user.UserName);
             var emailExist = await _userManager.FindByEmailAsync(user.Email);
-
             if (userNameExist != null || emailExist != null)
                 return IdentityResult.Failed(new IdentityError { Description = "UserName hoac Email da duoc dung" });
             if (registerModel.PassWord != registerModel.ConfirmPassWord)
                 return IdentityResult.Failed(new IdentityError { Description = "Mat khau khong khop" });
             var result = await _userManager.CreateAsync(user, registerModel.PassWord);
-            if(result != IdentityResult.Success)
+            if (result != IdentityResult.Success)
             {
-                return IdentityResult.Failed(new IdentityError { Description="Loi"});
+                return IdentityResult.Failed(new IdentityError { Description = "Loi" });
             }
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
@@ -133,6 +123,13 @@ namespace API_Test1
                 await _userManager.AddToRoleAsync(user, UserRoles.Admin);
             }
             return IdentityResult.Success;
+        }
+
+
+        //create token for verify email, reset password =>STMP
+        private string CreateRandomToken()
+        {
+            return Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
         }
     }
 }

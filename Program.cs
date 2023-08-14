@@ -1,11 +1,21 @@
-using API_Test1;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System;
-using Microsoft.Extensions.Configuration;
+global using API_Test1;
+global using Microsoft.AspNetCore.Authentication.JwtBearer;
+global using Microsoft.AspNetCore.Identity;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.IdentityModel.Tokens;
+global using System.Text;
+global using System.IdentityModel.Tokens.Jwt;
+global using System.Security.Claims;
+global using System.Security.Cryptography;
+global using API_Test1.IServices;
+global using API_Test1.Services;
+global using API_Test1.DbContext;
+global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+global using Microsoft.AspNetCore.Mvc;
+global using System.ComponentModel.DataAnnotations;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +28,7 @@ builder.Services.AddSwaggerGen();
 //Entity FW
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ConnStr")));
 //life cycle
-builder.Services.AddScoped<IAccountReposity, AccountReposity>();
+builder.Services.AddScoped<IAccountServices, AccountServices>();
 ///identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();

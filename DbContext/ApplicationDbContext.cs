@@ -1,8 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-using System;
-
-namespace API_Test1
+﻿
+namespace API_Test1.DbContext
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
