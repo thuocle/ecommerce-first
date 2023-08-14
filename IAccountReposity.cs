@@ -5,7 +5,8 @@ namespace API_Test1
 {
     public interface IAccountReposity
     {
-        public Task<IdentityResult> Register(RegisterModel registerModel);
-        public Task<string> Login(LoginModel loginModel);
+        public Task<IdentityResult> RegisterAsync(RegisterModel registerModel);
+        public Task<IdentityResult> RegisterAdminAsync(RegisterModel registerModel);
+        public Task<string> LoginAsync(LoginModel loginModel);
     }
 }

@@ -33,15 +33,14 @@ builder.Services.AddAuthentication(options =>
     //adding jwtbearer
     .AddJwtBearer(options =>
     {
+        options.SaveToken = true;
+        options.RequireHttpsMetadata = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
             ValidAudience = builder.Configuration["JWT:ValidAudience"],
-            ClockSkew = TimeSpan.Zero,
+            ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]))
         };
     });
@@ -57,9 +56,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-app.UseAuthentication();
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

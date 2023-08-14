@@ -14,9 +14,23 @@ namespace API_Test1.Controllers
         }
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel registerModel)
+        public async Task<IActionResult> Register( RegisterModel registerModel)
         {
-            var re = await _AccountReposity.Register(registerModel);
+            var re = await _AccountReposity.RegisterAsync(registerModel);
+            return Ok(re);
+        }
+        [HttpPost]
+        [Route("registerAdmin")]
+        public async Task<IActionResult> RegisterAdmin( RegisterModel registerModel)
+        {
+            var re = await _AccountReposity.RegisterAdminAsync(registerModel);
+            return Ok(re);
+        }
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login( LoginModel loginModel)
+        {
+            var re = await _AccountReposity.LoginAsync(loginModel);
             return Ok(re);
         }
     }
