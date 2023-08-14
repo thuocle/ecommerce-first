@@ -1,4 +1,4 @@
-﻿namespace API_Test1
+﻿namespace API_Test1.Models.ViewModels
 {
     public class LoginModel
     {

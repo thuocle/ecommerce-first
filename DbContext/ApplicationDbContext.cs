@@ -1,4 +1,6 @@
 ﻿
+using API_Test1.Models.Entities;
+
 namespace API_Test1.DbContext
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>

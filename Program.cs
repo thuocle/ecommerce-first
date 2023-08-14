@@ -13,9 +13,10 @@ global using API_Test1.DbContext;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Mvc;
 global using System.ComponentModel.DataAnnotations;
-
-
-
+global using API_Test1.Models.Entities;
+global using API_Test1.Constant;
+global using MimeKit.Text;
+global using MimeKit;
 
 var builder = WebApplication.CreateBuilder(args);
 
