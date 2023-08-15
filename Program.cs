@@ -1,4 +1,3 @@
-global using API_Test1;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.EntityFrameworkCore;
@@ -7,7 +6,6 @@ global using System.Text;
 global using System.IdentityModel.Tokens.Jwt;
 global using System.Security.Claims;
 global using System.Security.Cryptography;
-global using API_Test1.Services;
 global using API_Test1.DbContext;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Mvc;
@@ -21,8 +19,8 @@ global using API_Test1.Services.MailServices;
 global using API_Test1.Models.ViewModels;
 global using MailKit.Net.Smtp;
 global using Microsoft.AspNetCore.Authorization;
-global using System.ComponentModel.DataAnnotations.Schema;
-global using System.Text.Json.Serialization;
+global using API_Test1.Models.DTOs;
+using Microsoft.AspNetCore.CookiePolicy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +35,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 //life cycle
 builder.Services.AddScoped<IAccountServices, AccountServices>();
 builder.Services.AddScoped<IMailServices, MailServices>();
+//http
+builder.Services.AddHttpContextAccessor();
+//cookies policy
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+    options.HttpOnly = HttpOnlyPolicy.Always;
+    options.Secure = CookieSecurePolicy.Always;
+});
 ///identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();

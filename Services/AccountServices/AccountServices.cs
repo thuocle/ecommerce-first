@@ -1,7 +1,6 @@
-﻿using API_Test1.Constant;
-using API_Test1.Models.DTOs;
-using API_Test1.Models.Entities;
-using Newtonsoft.Json.Linq;
+﻿
+
+using Microsoft.AspNetCore.Http;
 
 namespace API_Test1.Services.AccountServices
 {
@@ -12,14 +11,16 @@ namespace API_Test1.Services.AccountServices
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
         private readonly IMailServices _mailServices;
+        private readonly IHttpContextAccessor _httpContext;
 
-        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices)
+        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
             _dbContext = dbContext;
             _mailServices = mailServices;
+            _httpContext = httpContext;
         }
         #region private
         //generate token for authentication on login
@@ -60,19 +61,13 @@ namespace API_Test1.Services.AccountServices
         {
             ApplicationUser account = new()
             {
+                FullName = registerModel.FullName,
                 UserName = registerModel.UserName,
                 Email = registerModel.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 Status = AccountStatus.Pending,
-                VerifyToken = CreateRandomToken()
-            };
-            Users user1 = new()
-            {
-                UserName = registerModel.UserName,
-                FullName = registerModel.FullName,
-                Email = registerModel.Email,
-                Phone = string.Empty,
-                Address = string.Empty
+                VerifyToken = CreateRandomToken(),
+                CreateAt = DateTime.Now
             };
             var userNameExist = await _userManager.FindByNameAsync(account.UserName);
             var emailExist = await _userManager.FindByEmailAsync(account.Email);
@@ -81,8 +76,6 @@ namespace API_Test1.Services.AccountServices
                 return MessageStatus.EmailOrUsernameAlreadyExists;
             if (registerModel.PassWord != registerModel.ConfirmPassWord)
                 return MessageStatus.MissMatchedPassword;
-            _dbContext.Add(user1);
-            _dbContext.SaveChangesAsync();
             var result = await _userManager.CreateAsync(account, registerModel.PassWord);
             if (result != IdentityResult.Success)
             {
@@ -96,9 +89,10 @@ namespace API_Test1.Services.AccountServices
             {
                 await _userManager.AddToRoleAsync(account, UserRoles.User);
             }
+            //send mail confirm
             _mailServices.SendMail(new MailDTOs() { 
                 To = registerModel.Email, 
-                Body = $"<p>Đăng ký thành, hãy xác nhận để trải nghiệm. Đây là mã xác nhận <b>{account.VerifyToken}</b>, hãy kích hoạt trong thời gian còn hiệu lực. Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này! Trân trọng</p>", 
+                Body = $"<p>Đăng ký thành công, hãy xác nhận để trải nghiệm. Đây là mã xác nhận <b>{account.VerifyToken}</b>, hãy kích hoạt trong thời gian còn hiệu lực. Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này! Trân trọng</p>", 
                 Subject="Đăng ký thành công!"
             });
             return MessageStatus.Success;
@@ -114,6 +108,7 @@ namespace API_Test1.Services.AccountServices
             // neu dung token => active => xoa token
             account.VerifyToken = string.Empty;
             account.VerifyTokenExpiry = null;
+            account.Status = AccountStatus.Active;
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
@@ -126,6 +121,15 @@ namespace API_Test1.Services.AccountServices
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.PassWord))
             {
                 var token = await GenerateAuthenTokenAsync(user);
+                var cookieOptions = new CookieOptions
+                {
+                    Expires = DateTime.UtcNow.AddHours(3),
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None
+                };
+
+                _httpContext.HttpContext.Response.Cookies.Append("MyCookiesWithLove", token, cookieOptions);
                 return token;
             }
             return MessageStatus.AccountNotFound.ToString();
@@ -158,20 +162,23 @@ namespace API_Test1.Services.AccountServices
             return MessageStatus.Success;
         }
 
-        public async Task<MessageStatus> UpdateUserProfileAsync(string AccountID, UserProfileModel request)
+        public async Task<MessageStatus> UpdateUserProfileAsync(string accountID, UserProfileModel request)
         {
-            var acc = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == AccountID);
-            var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.AccountID == AccountID);
-            if (user == null)
+            var acc = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == accountID);
+            if (acc == null)
                 return MessageStatus.AccountNotFound;
-            
+            acc.FullName = request.FullName;
+            acc.UserName = request.UserName;
+            acc.Email = request.Email;
+            acc.Phone = request.Phone;
+            acc.Address = request.Address;
+            acc.Avatar = request.Avatar;
             return MessageStatus.Success;
         }
 
-        public async Task<MessageStatus> GetUserProfileAsync(string userID)
+        public async Task<ApplicationUser> GetUserProfileAsync(string userID)
         {
-            return MessageStatus.Success;
-
+            return await _userManager.FindByIdAsync(userID);
         }
         #endregion
 

@@ -5,6 +5,5 @@
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
-        public virtual DbSet<Users> Users { get; set; }
     }
 }
