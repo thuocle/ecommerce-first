@@ -1,4 +1,4 @@
-﻿
+﻿using API_Test1.Models.DTOs;
 using API_Test1.Models.ViewModels;
 
 namespace API_Test1.Controllers
@@ -12,26 +12,43 @@ namespace API_Test1.Controllers
         {
             _AccountReposity = accountReposity;
         }
+
+        #region for user
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register( RegisterModel registerModel)
+        public async Task<IActionResult> Register(RegisterModel registerModel)
         {
             var re = await _AccountReposity.RegisterAsync(registerModel);
-            return Ok(re);
-        }
-        [HttpPost]
-        [Route("registerAdmin")]
-        public async Task<IActionResult> RegisterAdmin( RegisterModel registerModel)
-        {
-            var re = await _AccountReposity.RegisterAdminAsync(registerModel);
-            return Ok(re);
+            if (re != MessageStatus.Success)
+                return BadRequest(re);
+
+            return Ok("Thành công");
         }
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login( LoginModel loginModel)
+        public async Task<IActionResult> Login(LoginModel loginModel)
         {
             var re = await _AccountReposity.LoginAsync(loginModel);
+            if (re == null)
+                return BadRequest("Dang nhap that bai");
+
             return Ok(re);
         }
+        #endregion
+
+
+        #region for Admin
+        [HttpPost]
+        [Route("registerAdmin")]
+        public async Task<IActionResult> RegisterAdmin(RegisterModel registerModel)
+        {
+            var re = await _AccountReposity.RegisterAdminAsync(registerModel);
+            if (re != MessageStatus.Success)
+                return BadRequest(re);
+
+            return Ok("Thành công");
+        }
+        #endregion
+
     }
 }

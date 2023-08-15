@@ -2,7 +2,9 @@
 {
     public class LoginModel
     {
-        public string UserName { get; set; }
-        public string PassWord { get; set; }
+        [Required, MinLength(6)]
+        public string UserName { get; set; } = string.Empty;
+        [Required]
+        public string PassWord { get; set; } = string.Empty;
     }
 }

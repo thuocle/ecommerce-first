@@ -1,8 +1,9 @@
 ﻿using API_Test1.Constant;
+using API_Test1.Models.DTOs;
 using API_Test1.Models.Entities;
-using API_Test1.Models.ViewModels;
+using Newtonsoft.Json.Linq;
 
-namespace API_Test1.Services
+namespace API_Test1.Services.AccountServices
 {
     public class AccountServices : IAccountServices
     {
@@ -10,59 +11,19 @@ namespace API_Test1.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _dbContext;
+        private readonly IMailServices _mailServices;
 
-        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext)
+        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
             _dbContext = dbContext;
-
+            _mailServices = mailServices;
         }
-        //register user
-        public async Task<IdentityResult> RegisterAsync(RegisterModel registerModel)
-        {
-            ApplicationUser user = new()
-            {
-                UserName = registerModel.UserName,
-                Email = registerModel.Email,
-                SecurityStamp = Guid.NewGuid().ToString(),
-            };
-            Users user1 = new()
-            {
-                UserID = user.Id,
-                UserName = registerModel.UserName,
-                FullName = registerModel.FullName,
-                Email = registerModel.Email,
-                Phone = string.Empty,
-                Address = string.Empty
-            };
-            var userNameExist = await _userManager.FindByNameAsync(user.UserName);
-            var emailExist = await _userManager.FindByEmailAsync(user.Email);
-
-            if (userNameExist != null || emailExist != null)
-                return IdentityResult.Failed(new IdentityError { Description = "UserName hoac Email da duoc dung" });
-            if (registerModel.PassWord != registerModel.ConfirmPassWord)
-                return IdentityResult.Failed(new IdentityError { Description = "Mat khau khong khop" });
-            _dbContext.Add(user1);
-            _dbContext.SaveChangesAsync();
-            var result = await _userManager.CreateAsync(user, registerModel.PassWord);
-            if (result != IdentityResult.Success)
-            {
-                return IdentityResult.Failed(new IdentityError { Description = "Loi" });
-            }
-            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
-            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
-            if (await _roleManager.RoleExistsAsync(UserRoles.User))
-            {
-                await _userManager.AddToRoleAsync(user, UserRoles.User);
-            }
-            return IdentityResult.Success;
-        }
+        #region private
         //generate token for authentication on login
-        public async Task<string> GenerateAuthenTokenAsync(ApplicationUser user)
+        private async Task<string> GenerateAuthenTokenAsync(ApplicationUser user)
         {
             var userRoles = await _userManager.GetRolesAsync(user);
             var authClaims = new List<Claim>
@@ -86,6 +47,77 @@ namespace API_Test1.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        //create token for verify email, reset password =>STMP
+        private string CreateRandomToken()
+        {
+            return Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
+        }
+        #endregion
+        #region For User
+
+        //register user
+        public async Task<MessageStatus> RegisterAsync(RegisterModel registerModel)
+        {
+            ApplicationUser account = new()
+            {
+                UserName = registerModel.UserName,
+                Email = registerModel.Email,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Status = AccountStatus.Pending,
+                VerifyToken = CreateRandomToken()
+            };
+            Users user1 = new()
+            {
+                UserName = registerModel.UserName,
+                FullName = registerModel.FullName,
+                Email = registerModel.Email,
+                Phone = string.Empty,
+                Address = string.Empty
+            };
+            var userNameExist = await _userManager.FindByNameAsync(account.UserName);
+            var emailExist = await _userManager.FindByEmailAsync(account.Email);
+
+            if (userNameExist != null || emailExist != null)
+                return MessageStatus.EmailOrUsernameAlreadyExists;
+            if (registerModel.PassWord != registerModel.ConfirmPassWord)
+                return MessageStatus.MissMatchedPassword;
+            _dbContext.Add(user1);
+            _dbContext.SaveChangesAsync();
+            var result = await _userManager.CreateAsync(account, registerModel.PassWord);
+            if (result != IdentityResult.Success)
+            {
+                return MessageStatus.Failed;
+            }
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
+            if (await _roleManager.RoleExistsAsync(UserRoles.User))
+            {
+                await _userManager.AddToRoleAsync(account, UserRoles.User);
+            }
+            _mailServices.SendMail(new MailDTOs() { 
+                To = registerModel.Email, 
+                Body = $"<p>Đăng ký thành, hãy xác nhận để trải nghiệm. Đây là mã xác nhận <b>{account.VerifyToken}</b>, hãy kích hoạt trong thời gian còn hiệu lực. Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này! Trân trọng</p>", 
+                Subject="Đăng ký thành công!"
+            });
+            return MessageStatus.Success;
+        }
+        //verify email
+        public async Task<MessageStatus> VerifyAccountAsync(string token)
+        {
+            var account = _userManager.Users.FirstOrDefault(x=> x.VerifyToken == token);
+            if (account == null)
+                return MessageStatus.InvalidToken;
+            if (account.VerifyTokenExpiry < DateTime.Now)
+                return MessageStatus.ExpiredToken;
+            // neu dung token => active => xoa token
+            account.VerifyToken = string.Empty;
+            account.VerifyTokenExpiry = null;
+            await _userManager.UpdateAsync(account);
+            return MessageStatus.Success;
+        }
+        //Login user
         public async Task<string> LoginAsync(LoginModel loginModel)
         {
             if (_userManager == null)
@@ -96,10 +128,56 @@ namespace API_Test1.Services
                 var token = await GenerateAuthenTokenAsync(user);
                 return token;
             }
-            return MessageStatus.Fail.ToString();
+            return MessageStatus.AccountNotFound.ToString();
+        }
+      
+        public async Task<MessageStatus> ForgotPasswordAsync(string email)
+        {
+            var account = _userManager.Users.FirstOrDefault(x => x.Email == email);
+            if (account == null)
+                return MessageStatus.AccountNotFound;
+            account.ResetPasswordToken = CreateRandomToken();
+            account.ResetPasswordTokenExpiry = DateTime.Now.AddMinutes(15);
+            await _userManager.UpdateAsync(account);
+            return MessageStatus.Success;
         }
 
-        public async Task<IdentityResult> RegisterAdminAsync(RegisterModel registerModel)
+        public async Task<MessageStatus> ResetPasswordAsync(ResetPasswordModel request)
+        {
+            var account = _userManager.Users.FirstOrDefault(x => x.ResetPasswordToken == request.Token);
+            if (account == null)
+                return MessageStatus.InvalidToken;
+            if (account.ResetPasswordTokenExpiry < DateTime.Now)
+                return MessageStatus.ExpiredToken;
+            // neu dung token => active => xoa token
+            var passwordHash = _userManager.PasswordHasher.HashPassword(account, request.Password);
+            account.PasswordHash = passwordHash;
+            account.ResetPasswordToken = string.Empty;
+            account.ResetPasswordTokenExpiry = null;
+            await _userManager.UpdateAsync(account);
+            return MessageStatus.Success;
+        }
+
+        public async Task<MessageStatus> UpdateUserProfileAsync(string AccountID, UserProfileModel request)
+        {
+            var acc = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == AccountID);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.AccountID == AccountID);
+            if (user == null)
+                return MessageStatus.AccountNotFound;
+            
+            return MessageStatus.Success;
+        }
+
+        public async Task<MessageStatus> GetUserProfileAsync(string userID)
+        {
+            return MessageStatus.Success;
+
+        }
+        #endregion
+
+        #region for admin
+        //dùng cho lần đầu nhằm tạo các quyền và admin đầu tiên
+        public async Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel)
         {
             ApplicationUser user = new()
             {
@@ -110,13 +188,13 @@ namespace API_Test1.Services
             var userNameExist = await _userManager.FindByNameAsync(user.UserName);
             var emailExist = await _userManager.FindByEmailAsync(user.Email);
             if (userNameExist != null || emailExist != null)
-                return IdentityResult.Failed(new IdentityError { Description = "UserName hoac Email da duoc dung" });
+                return MessageStatus.EmailOrUsernameAlreadyExists;
             if (registerModel.PassWord != registerModel.ConfirmPassWord)
-                return IdentityResult.Failed(new IdentityError { Description = "Mat khau khong khop" });
+                return MessageStatus.MissMatchedPassword;
             var result = await _userManager.CreateAsync(user, registerModel.PassWord);
             if (result != IdentityResult.Success)
             {
-                return IdentityResult.Failed(new IdentityError { Description = "Loi" });
+                return MessageStatus.Failed;
             }
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
@@ -126,14 +204,51 @@ namespace API_Test1.Services
             {
                 await _userManager.AddToRoleAsync(user, UserRoles.Admin);
             }
-            return IdentityResult.Success;
+            return MessageStatus.Success;
         }
 
-
-        //create token for verify email, reset password =>STMP
-        private string CreateRandomToken()
+        public async Task<string> LoginAdminAsync(LoginModel loginModel)
         {
-            return Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
+            return MessageStatus.Success.ToString();
+
         }
+
+        public async Task<MessageStatus> AddAccountAsync(RegisterModel registerModel)
+        {
+            return MessageStatus.Success;
+
+        }
+
+        public async Task<MessageStatus> UpdateUserAccountAsync(string userID, UserProfileModel userProfile)
+        {
+            return MessageStatus.Success;
+        }
+
+        public async Task<MessageStatus> UpdateAdminProfileAsync(string adminID, AdminProfileModel adminProfile)
+        {
+            return MessageStatus.Success;
+
+        }
+
+        public async Task<MessageStatus> RemoveUserAccountAsync(string userID)
+        {
+            return MessageStatus.Success;
+
+        }
+
+        /*public async Task<PageInfo<ApplicationUser>> GetAllUserAsync(Pagination page)
+        {
+
+        }*/
+        #endregion
+        #region Anonymous
+        public async Task<MessageStatus> LogoutAsync()
+        {
+            return MessageStatus.Success;
+        }
+
+        
+        #endregion
+
     }
 }

@@ -7,7 +7,6 @@ global using System.Text;
 global using System.IdentityModel.Tokens.Jwt;
 global using System.Security.Claims;
 global using System.Security.Cryptography;
-global using API_Test1.IServices;
 global using API_Test1.Services;
 global using API_Test1.DbContext;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -17,6 +16,13 @@ global using API_Test1.Models.Entities;
 global using API_Test1.Constant;
 global using MimeKit.Text;
 global using MimeKit;
+global using API_Test1.Services.AccountServices;
+global using API_Test1.Services.MailServices;
+global using API_Test1.Models.ViewModels;
+global using MailKit.Net.Smtp;
+global using Microsoft.AspNetCore.Authorization;
+global using System.ComponentModel.DataAnnotations.Schema;
+global using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +36,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ConnStr")));
 //life cycle
 builder.Services.AddScoped<IAccountServices, AccountServices>();
+builder.Services.AddScoped<IMailServices, MailServices>();
 ///identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();

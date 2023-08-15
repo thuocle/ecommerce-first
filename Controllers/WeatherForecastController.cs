@@ -1,6 +1,5 @@
-using API_Test1.Models.ViewModels;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+
+using API_Test1.Models.DTOs;
 
 namespace API_Test1.Controllers
 {

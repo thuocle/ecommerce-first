@@ -1,4 +1,4 @@
-﻿namespace API_Test1.Models.ViewModels
+﻿namespace API_Test1.Models.DTOs
 {
     public static class UserRoles
     {

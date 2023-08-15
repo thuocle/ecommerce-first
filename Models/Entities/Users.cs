@@ -1,4 +1,5 @@
-﻿namespace API_Test1.Models.Entities
+﻿
+namespace API_Test1.Models.Entities
 {
     public class Users
     {
@@ -9,7 +10,11 @@
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public DateTime? CreateAt { get; set; } = DateTime.Now;
+        [ForeignKey("ApplicationUser")]
+        public string? AccountID { get; set; }
+        [JsonIgnore]
+        public ApplicationUser? ApplicationUser { get; set; }
+        public DateTime? CreateAt { get; set; }
         public DateTime? UpdateAt { get; set; }
     }
 }
