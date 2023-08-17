@@ -3,7 +3,6 @@ using API_Test1.Models.DTOs;
 
 namespace API_Test1.Controllers
 {
-    [Authorize(Roles =UserRoles.Admin)]
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase

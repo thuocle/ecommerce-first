@@ -1,6 +1,4 @@
-﻿
-
-using Microsoft.AspNetCore.Http;
+﻿using API_Test1.Services.FileServices;
 
 namespace API_Test1.Services.AccountServices
 {
@@ -12,8 +10,9 @@ namespace API_Test1.Services.AccountServices
         private readonly ApplicationDbContext _dbContext;
         private readonly IMailServices _mailServices;
         private readonly IHttpContextAccessor _httpContext;
+        private readonly IFileServices _fileServices;
 
-        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext)
+        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext, IFileServices fileServices)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -21,6 +20,7 @@ namespace API_Test1.Services.AccountServices
             _dbContext = dbContext;
             _mailServices = mailServices;
             _httpContext = httpContext;
+            _fileServices = fileServices;
         }
         #region private
         //generate token for authentication on login
@@ -51,7 +51,8 @@ namespace API_Test1.Services.AccountServices
         //create token for verify email, reset password =>STMP
         private string CreateRandomToken()
         {
-            return Convert.ToHexString(RandomNumberGenerator.GetBytes(64));
+            Random rd = new Random();
+            return rd.Next(999999).ToString();
         }
         #endregion
         #region For User
@@ -67,7 +68,9 @@ namespace API_Test1.Services.AccountServices
                 SecurityStamp = Guid.NewGuid().ToString(),
                 Status = AccountStatus.Pending,
                 VerifyToken = CreateRandomToken(),
+                VerifyTokenExpiry = DateTime.Now.AddMinutes(15),
                 CreateAt = DateTime.Now
+
             };
             var userNameExist = await _userManager.FindByNameAsync(account.UserName);
             var emailExist = await _userManager.FindByEmailAsync(account.Email);
@@ -91,9 +94,71 @@ namespace API_Test1.Services.AccountServices
             }
             //send mail confirm
             _mailServices.SendMail(new MailDTOs() { 
-                To = registerModel.Email, 
-                Body = $"<p>Đăng ký thành công, hãy xác nhận để trải nghiệm. Đây là mã xác nhận <b>{account.VerifyToken}</b>, hãy kích hoạt trong thời gian còn hiệu lực. Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này! Trân trọng</p>", 
-                Subject="Đăng ký thành công!"
+                To = registerModel.Email,
+                Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333333;
+        }}
+        
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+
+        .header {{
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+        }}
+
+        .content {{
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+        }}
+
+        .token {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #ff0000;
+        }}
+
+        .footer {{
+            padding: 10px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>Đăng ký thành công</h2>
+        </div>
+        
+        <div class='content'>
+            <p>
+                Đăng ký thành công, hãy xác nhận để trải nghiệm.
+                Đây là mã xác nhận: <span class='token'>{account.VerifyToken}</span>.
+                Hãy kích hoạt trong thời gian còn hiệu lực.
+                Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này!
+            </p>
+        </div>
+        
+        <div class='footer'>
+            <p>Trân trọng,</p>
+        </div>
+    </div>
+</body>
+</html>", 
+                Subject ="Đăng ký thành công!"
             });
             return MessageStatus.Success;
         }
@@ -106,9 +171,9 @@ namespace API_Test1.Services.AccountServices
             if (account.VerifyTokenExpiry < DateTime.Now)
                 return MessageStatus.ExpiredToken;
             // neu dung token => active => xoa token
+            account.Status = AccountStatus.Active;
             account.VerifyToken = string.Empty;
             account.VerifyTokenExpiry = null;
-            account.Status = AccountStatus.Active;
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
@@ -134,7 +199,7 @@ namespace API_Test1.Services.AccountServices
             }
             return MessageStatus.AccountNotFound.ToString();
         }
-      
+        //forgot
         public async Task<MessageStatus> ForgotPasswordAsync(string email)
         {
             var account = _userManager.Users.FirstOrDefault(x => x.Email == email);
@@ -145,7 +210,7 @@ namespace API_Test1.Services.AccountServices
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
-
+        // reset
         public async Task<MessageStatus> ResetPasswordAsync(ResetPasswordModel request)
         {
             var account = _userManager.Users.FirstOrDefault(x => x.ResetPasswordToken == request.Token);
@@ -161,7 +226,7 @@ namespace API_Test1.Services.AccountServices
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
-
+        //update profile for user
         public async Task<MessageStatus> UpdateUserProfileAsync(string accountID, UserProfileModel request)
         {
             var acc = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == accountID);
@@ -172,10 +237,18 @@ namespace API_Test1.Services.AccountServices
             acc.Email = request.Email;
             acc.Phone = request.Phone;
             acc.Address = request.Address;
-            acc.Avatar = request.Avatar;
+            acc.UpdateAt = DateTime.Now;
+            if (request.Avatar != null)
+            {
+                // Tạo một đối tượng FileServices từ lớp chứa nó
+                string avatarFileId = await _fileServices.UploadImage(request.Avatar);
+                acc.Avatar = avatarFileId;
+            }
+            // Lưu các thay đổi vào cơ sở dữ liệu
+            await _userManager.UpdateAsync(acc);
             return MessageStatus.Success;
         }
-
+        // get a user
         public async Task<ApplicationUser> GetUserProfileAsync(string userID)
         {
             return await _userManager.FindByIdAsync(userID);

@@ -21,6 +21,7 @@ global using MailKit.Net.Smtp;
 global using Microsoft.AspNetCore.Authorization;
 global using API_Test1.Models.DTOs;
 using Microsoft.AspNetCore.CookiePolicy;
+using API_Test1.Services.FileServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 //life cycle
 builder.Services.AddScoped<IAccountServices, AccountServices>();
 builder.Services.AddScoped<IMailServices, MailServices>();
+builder.Services.AddScoped< IFileServices, FileServices>();
 //http
 builder.Services.AddHttpContextAccessor();
 //cookies policy
