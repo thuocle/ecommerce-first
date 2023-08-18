@@ -14,10 +14,9 @@
         //only admin
         public Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel);
         public Task<string> LoginAdminAsync(LoginModel loginModel);
-        public Task<MessageStatus> AddAccountAsync(RegisterModel registerModel);
-        public Task<MessageStatus> UpdateUserAccountAsync(string userID, UserProfileModel userProfile);
-        public Task<MessageStatus> UpdateAdminProfileAsync(string adminID, AdminProfileModel adminProfile);
+        public Task<MessageStatus> AddAccountAsync(AccountModel account);
+        public Task<MessageStatus> UpdateUserAccountAsync(string userID, AccountModel userProfile);
         public Task<MessageStatus> RemoveUserAccountAsync(string userID);
-        /*public Task<PageInfo<ApplicationUser>> GetAllUserAsync(Pagination page);*/
+        public Task<PageInfo<AccountManage>> GetAllUserAsync(Pagination page);
     }
 }
