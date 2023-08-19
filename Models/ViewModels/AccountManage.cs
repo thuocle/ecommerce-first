@@ -13,9 +13,9 @@ namespace API_Test1.Models.ViewModels
         [Required, MinLength(10), MaxLength(11)]
         public string? PhoneNumber { get; set; } = string.Empty;
         [Required, MinLength(6), PasswordPropertyText]
-        public string? PassWord { get; set; } = string.Empty;
+        public string? Password { get; set; } = string.Empty;
         [Required, MinLength(6), PasswordPropertyText, Compare("PassWord")]
-        public string? ConfirmPassWord { get; set; } = string.Empty;
+        public string? ConfirmPassword { get; set; } = string.Empty;
         [Required]
         public string? UserRoles { get; set; } = string.Empty;
         [Required]

@@ -23,7 +23,7 @@ namespace API_Test1.Services.AccountServices
         }
         #region private
         //generate token for authentication on login
-        private async Task<string> GenerateAuthenTokenAsync(ApplicationUser user)
+        private async Task<string> GenerateAuthTokenAsync(ApplicationUser user)
         {
             var userRoles = await _userManager.GetRolesAsync(user);
             var authClaims = new List<Claim>
@@ -53,6 +53,14 @@ namespace API_Test1.Services.AccountServices
             Random rd = new Random();
             return rd.Next(999999).ToString();
         }
+        //check quyen
+        private async Task EnsureRoleExists(string roleName)
+        {
+            if (!await _roleManager.RoleExistsAsync(roleName))
+            {
+                await _roleManager.CreateAsync(new IdentityRole(roleName));
+            }
+        }
         #endregion
         #region For User
 
@@ -65,7 +73,7 @@ namespace API_Test1.Services.AccountServices
 
             if (userNameExist != null || emailExist != null)
                 return MessageStatus.EmailOrUsernameAlreadyExists;
-            if (registerModel.PassWord != registerModel.ConfirmPassWord)
+            if (registerModel.Password != registerModel.ConfirmPassword)
                 return MessageStatus.MissMatchedPassword;
             // tao 1 account moi
             ApplicationUser account = new()
@@ -81,7 +89,7 @@ namespace API_Test1.Services.AccountServices
 
             };
             //thêm vào DB
-            var result = await _userManager.CreateAsync(account, registerModel.PassWord);
+            var result = await _userManager.CreateAsync(account, registerModel.Password);
             if (!result.Succeeded)
             {
                 return MessageStatus.Failed;
@@ -186,9 +194,9 @@ namespace API_Test1.Services.AccountServices
             if (_userManager == null)
                 return MessageStatus.Empty.ToString();
             var user = await _userManager.FindByNameAsync(loginModel.UserName);
-            if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.PassWord))
+            if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
-                var token = await GenerateAuthenTokenAsync(user);
+                var token = await GenerateAuthTokenAsync(user);
                 var cookieOptions = new CookieOptions
                 {
                     Expires = DateTime.UtcNow.AddHours(3),
@@ -253,18 +261,23 @@ namespace API_Test1.Services.AccountServices
             return MessageStatus.Success;
         }
         // get a user
-        public async IEnumerable<ApplicationUser> GetUserProfileAsync(string userID)
+        public async Task<ApplicationUser> GetUserProfileAsync(string userID)
         {
-            var allqr = await _userManager.Where(x=>x.Id == userID).Select(x => new ApplicationUser
-            {
+            var user = await _userManager.Users
+                .AsNoTracking() // Không theo dõi thay đổi để tăng hiệu suất
+                .Where(x => x.Id == userID)
+                .Select(x => new ApplicationUser
+                {
                     FullName = x.FullName,
                     UserName = x.UserName,
                     Email = x.Email,
                     PhoneNumber = x.PhoneNumber,
                     Address = x.Address,
                     Avatar = x.Avatar
-                });
-            return  allqr.AsQueryable();
+                })
+                .SingleOrDefaultAsync(); // Sử dụng SingleOrDefaultAsync thay vì AsQueryable để trả về một đối tượng duy nhất
+
+            return user;
         }
         #endregion
 
@@ -272,42 +285,50 @@ namespace API_Test1.Services.AccountServices
         //dùng cho lần đầu nhằm tạo các quyền và admin đầu tiên
         public async Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel)
         {
-            ApplicationUser user = new()
+            var user = new ApplicationUser
             {
                 UserName = registerModel.UserName,
                 Email = registerModel.Email,
-                SecurityStamp = Guid.NewGuid().ToString(),
+                SecurityStamp = Guid.NewGuid().ToString()
             };
+
             var userNameExist = await _userManager.FindByNameAsync(user.UserName);
             var emailExist = await _userManager.FindByEmailAsync(user.Email);
+
             if (userNameExist != null || emailExist != null)
                 return MessageStatus.EmailOrUsernameAlreadyExists;
-            if (registerModel.PassWord != registerModel.ConfirmPassWord)
+
+            if (registerModel.Password != registerModel.ConfirmPassword)
                 return MessageStatus.MissMatchedPassword;
-            var result = await _userManager.CreateAsync(user, registerModel.PassWord);
-            if (result != IdentityResult.Success)
+
+            var result = await _userManager.CreateAsync(user, registerModel.Password);
+
+            if (result.Succeeded)
+            {
+                await EnsureRoleExists(UserRoles.Admin);
+                await EnsureRoleExists(UserRoles.User);
+
+                await _userManager.AddToRoleAsync(user, UserRoles.Admin);
+
+                return MessageStatus.Success;
+            }
+            else
             {
                 return MessageStatus.Failed;
             }
-            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
-            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
-            if (await _roleManager.RoleExistsAsync(UserRoles.Admin))
-            {
-                await _userManager.AddToRoleAsync(user, UserRoles.Admin);
-            }
-            return MessageStatus.Success;
         }
+
         public async Task<string> LoginAdminAsync(LoginModel loginModel)
         {
-            //dùng cho trang login riêng dành cho nội bộ 
             if (_userManager == null)
                 return MessageStatus.Empty.ToString();
+
             var user = await _userManager.FindByNameAsync(loginModel.UserName);
-            if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.PassWord))
+
+            if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
-                var token = await GenerateAuthenTokenAsync(user);
+                var token = await GenerateAuthTokenAsync(user);
+
                 var cookieOptions = new CookieOptions
                 {
                     Expires = DateTime.UtcNow.AddYears(1),
@@ -315,14 +336,19 @@ namespace API_Test1.Services.AccountServices
                     Secure = true,
                     SameSite = SameSiteMode.None
                 };
+
                 _httpContext.HttpContext.Response.Cookies.Append("MyCookiesWithLove", token, cookieOptions);
+
                 return token;
             }
-            return MessageStatus.AccountNotFound.ToString();
+            else
+            {
+                return MessageStatus.AccountNotFound.ToString();
+            }
         }
+
         public async Task<MessageStatus> AddAccountAsync(AccountManage account)
         {
-            // Kiểm tra xem email và tên người dùng đã tồn tại hay chưa
             var existingEmail = await _userManager.FindByEmailAsync(account.Email);
             var existingUsername = await _userManager.FindByNameAsync(account.UserName);
 
@@ -331,7 +357,6 @@ namespace API_Test1.Services.AccountServices
                 return MessageStatus.EmailOrUsernameAlreadyExists;
             }
 
-            // Tạo đối tượng người dùng mới
             var user = new ApplicationUser
             {
                 FullName = account.FullName,
@@ -339,35 +364,36 @@ namespace API_Test1.Services.AccountServices
                 UserName = account.UserName,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 Status = AccountStatus.Active,
-                Avatar = await _fileServices.UploadImage(account.Avatar),
                 CreateAt = DateTime.Now
             };
-            // Tạo người dùng trong hệ thống
-            var result = await _userManager.CreateAsync(user, account.PassWord);
-            //phan quyen
+
+            if (account.Avatar != null)
+            {
+                user.Avatar = await _fileServices.UploadImage(account.Avatar);
+            }
+
+            var result = await _userManager.CreateAsync(user, account.Password);
+
             if (result.Succeeded)
             {
-                // Kiểm tra và phân quyền cho người dùng
                 if (!string.IsNullOrEmpty(account.UserRoles) && await _roleManager.RoleExistsAsync(account.UserRoles))
                 {
                     await _userManager.AddToRoleAsync(user, account.UserRoles);
                 }
                 return MessageStatus.Success;
             }
-            else
-                // Xử lý lỗi khi tạo người dùng không thành công
-                return MessageStatus.Failed;
+
+            return MessageStatus.Failed;
         }
         public async Task<MessageStatus> UpdateUserAccountAsync(string userId, AccountManage accountModel)
         {
-            //admin thực hiện update tất cả thông tin cho account bất kỳ
             var account = await _userManager.FindByIdAsync(userId);
+
             if (account == null)
             {
                 return MessageStatus.AccountNotFound;
             }
 
-            // Cập nhật các thông tin của tài khoản
             account.FullName = accountModel.FullName;
             account.UserName = accountModel.UserName;
             account.Email = accountModel.Email;
@@ -375,40 +401,47 @@ namespace API_Test1.Services.AccountServices
             account.Status = accountModel.Status;
             account.UpdateAt = DateTime.Now;
 
-            // Cập nhật avatar
             if (accountModel.Avatar != null)
             {
-                // Tạo một đối tượng FileServices từ lớp chứa nó
                 string avatarFileId = await _fileServices.UploadImage(accountModel.Avatar);
                 account.Avatar = avatarFileId;
             }
 
-            // Cập nhật mật khẩu
-            if (!string.IsNullOrEmpty(accountModel.PassWord))
+            if (!string.IsNullOrEmpty(accountModel.Password))
             {
-                var passwordHash = _userManager.PasswordHasher.HashPassword(account, accountModel.PassWord);
-                account.PasswordHash = passwordHash;
+                var removePasswordResult = await _userManager.RemovePasswordAsync(account);
+
+                if (!removePasswordResult.Succeeded)
+                {
+                    return MessageStatus.Failed;
+                }
+
+                var addPasswordResult = await _userManager.AddPasswordAsync(account, accountModel.Password);
+
+                if (!addPasswordResult.Succeeded)
+                {
+                    return MessageStatus.Failed;
+                }
             }
 
-            // Cập nhật vai trò (role)
             if (!string.IsNullOrEmpty(accountModel.UserRoles) && await _roleManager.RoleExistsAsync(accountModel.UserRoles))
             {
-                // Xóa các vai trò hiện tại của người dùng
                 var currentRoles = await _userManager.GetRolesAsync(account);
                 await _userManager.RemoveFromRolesAsync(account, currentRoles);
 
-                // Thêm vai trò mới cho người dùng
                 await _userManager.AddToRoleAsync(account, accountModel.UserRoles);
             }
 
-            // Cập nhật tài khoản trong hệ thống
             var result = await _userManager.UpdateAsync(account);
 
             if (result.Succeeded)
+            {
                 return MessageStatus.Success;
+            }
             else
-                // Xử lý lỗi khi cập nhật tài khoản không thành công
+            {
                 return MessageStatus.Failed;
+            }
         }
         public async Task<MessageStatus> RemoveUserAccountAsync(string userID)
         {
@@ -419,14 +452,9 @@ namespace API_Test1.Services.AccountServices
         }
         public async Task<PageInfo<AccountInfo>> GetAllUserAsync(Pagination page)
         {
-            var allqr = from user in _userManager.Users
-                        join roleuser in _dbContext.UserRoles on user.Id equals roleuser.UserId
-                        join role in _dbContext.Roles on roleuser.RoleId equals role.Id
-                        select new AccountInfo
-                        {
-                            User = user,
-                            RoleName = role.Name
-                        };
+            var allqr = _userManager.Users
+                .Join(_dbContext.UserRoles, user => user.Id, roleuser => roleuser.UserId, (user, roleuser) => new { User = user, RoleUserId = roleuser.RoleId })
+                .Join(_dbContext.Roles, temp => temp.RoleUserId, role => role.Id, (temp, role) => new AccountInfo { User = temp.User, RoleName = role.Name });
 
             var alluser = allqr.AsQueryable();
             var data = PageInfo<AccountInfo>.ToPageInfo(page, alluser);
@@ -452,6 +480,7 @@ namespace API_Test1.Services.AccountServices
 
             return MessageStatus.Failed;
         }
+        //ok
         #endregion
 
     }

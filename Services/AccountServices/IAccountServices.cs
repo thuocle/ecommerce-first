@@ -10,7 +10,7 @@
         public Task<MessageStatus> ForgotPasswordAsync(string email);
         public Task<MessageStatus> ResetPasswordAsync(ResetPasswordModel request);
         public Task<MessageStatus> UpdateUserProfileAsync(string userID, UserProfileModel request);
-        public IEnumerable<ApplicationUser> GetUserProfileAsync(string userID);
+        public Task<ApplicationUser> GetUserProfileAsync(string userID);
         //only admin
         public Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel);
         public Task<string> LoginAdminAsync(LoginModel loginModel);
