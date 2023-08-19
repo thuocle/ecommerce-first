@@ -10,13 +10,13 @@
         public Task<MessageStatus> ForgotPasswordAsync(string email);
         public Task<MessageStatus> ResetPasswordAsync(ResetPasswordModel request);
         public Task<MessageStatus> UpdateUserProfileAsync(string userID, UserProfileModel request);
-        public Task<ApplicationUser> GetUserProfileAsync(string userID);
+        public IEnumerable<ApplicationUser> GetUserProfileAsync(string userID);
         //only admin
         public Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel);
         public Task<string> LoginAdminAsync(LoginModel loginModel);
-        public Task<MessageStatus> AddAccountAsync(AccountModel account);
-        public Task<MessageStatus> UpdateUserAccountAsync(string userID, AccountModel userProfile);
+        public Task<MessageStatus> AddAccountAsync(AccountManage account);
+        public Task<MessageStatus> UpdateUserAccountAsync(string userID, AccountManage userProfile);
         public Task<MessageStatus> RemoveUserAccountAsync(string userID);
-        public Task<PageInfo<AccountManage>> GetAllUserAsync(Pagination page);
+        public Task<PageInfo<AccountInfo>> GetAllUserAsync(Pagination page);
     }
 }

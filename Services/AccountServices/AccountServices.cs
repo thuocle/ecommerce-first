@@ -1,6 +1,4 @@
-﻿using API_Test1.Models.ViewModels;
-using API_Test1.Services.FileServices;
-
+﻿using API_Test1.Services.FileServices;
 namespace API_Test1.Services.AccountServices
 {
     public class AccountServices : IAccountServices
@@ -255,9 +253,18 @@ namespace API_Test1.Services.AccountServices
             return MessageStatus.Success;
         }
         // get a user
-        public async Task<ApplicationUser> GetUserProfileAsync(string userID)
+        public async IEnumerable<ApplicationUser> GetUserProfileAsync(string userID)
         {
-            return await _userManager.FindByIdAsync(userID);
+            var allqr = await _userManager.Where(x=>x.Id == userID).Select(x => new ApplicationUser
+            {
+                    FullName = x.FullName,
+                    UserName = x.UserName,
+                    Email = x.Email,
+                    PhoneNumber = x.PhoneNumber,
+                    Address = x.Address,
+                    Avatar = x.Avatar
+                });
+            return  allqr.AsQueryable();
         }
         #endregion
 
@@ -313,7 +320,7 @@ namespace API_Test1.Services.AccountServices
             }
             return MessageStatus.AccountNotFound.ToString();
         }
-        public async Task<MessageStatus> AddAccountAsync(AccountModel account)
+        public async Task<MessageStatus> AddAccountAsync(AccountManage account)
         {
             // Kiểm tra xem email và tên người dùng đã tồn tại hay chưa
             var existingEmail = await _userManager.FindByEmailAsync(account.Email);
@@ -351,7 +358,7 @@ namespace API_Test1.Services.AccountServices
                 // Xử lý lỗi khi tạo người dùng không thành công
                 return MessageStatus.Failed;
         }
-        public async Task<MessageStatus> UpdateUserAccountAsync(string userId, AccountModel accountModel)
+        public async Task<MessageStatus> UpdateUserAccountAsync(string userId, AccountManage accountModel)
         {
             //admin thực hiện update tất cả thông tin cho account bất kỳ
             var account = await _userManager.FindByIdAsync(userId);
@@ -410,21 +417,21 @@ namespace API_Test1.Services.AccountServices
             account.Status = AccountStatus.Disabled;
             return MessageStatus.Success;
         }
-        public async Task<PageInfo<AccountManage>> GetAllUserAsync(Pagination page)
+        public async Task<PageInfo<AccountInfo>> GetAllUserAsync(Pagination page)
         {
             var allqr = from user in _userManager.Users
                         join roleuser in _dbContext.UserRoles on user.Id equals roleuser.UserId
                         join role in _dbContext.Roles on roleuser.RoleId equals role.Id
-                        select new AccountManage
+                        select new AccountInfo
                         {
                             User = user,
                             RoleName = role.Name
                         };
 
             var alluser = allqr.AsQueryable();
-            var data = PageInfo<AccountManage>.ToPageInfo(page, alluser);
+            var data = PageInfo<AccountInfo>.ToPageInfo(page, alluser);
             page.TotalItem = await alluser.CountAsync();
-            return new PageInfo<AccountManage>(page, data);
+            return new PageInfo<AccountInfo>(page, data);
         }
         #endregion
         #region Anonymous
