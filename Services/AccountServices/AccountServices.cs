@@ -82,7 +82,7 @@ namespace API_Test1.Services.AccountServices
                 UserName = registerModel.UserName,
                 Email = registerModel.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
-                Status = AccountStatus.Pending,
+                Status = Status.Pending,
                 VerifyToken = CreateRandomToken(),
                 VerifyTokenExpiry = DateTime.Now.AddMinutes(15),
                 CreateAt = DateTime.Now
@@ -182,7 +182,7 @@ namespace API_Test1.Services.AccountServices
             if (account.VerifyTokenExpiry < DateTime.Now)
                 return MessageStatus.ExpiredToken;
             // neu dung token => active => xoa token
-            account.Status = AccountStatus.Active;
+            account.Status = Status.Active;
             account.VerifyToken = string.Empty;
             account.VerifyTokenExpiry = null;
             await _userManager.UpdateAsync(account);
@@ -205,7 +205,7 @@ namespace API_Test1.Services.AccountServices
                     SameSite = SameSiteMode.None
                 };
 
-                _httpContext.HttpContext.Response.Cookies.Append("MyCookiesWithLove", token, cookieOptions);
+                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);
                 return token;
             }
             return MessageStatus.AccountNotFound.ToString();
@@ -214,7 +214,7 @@ namespace API_Test1.Services.AccountServices
         public async Task<MessageStatus> ForgotPasswordAsync(string email)
         {
             var account = _userManager.Users.FirstOrDefault(x => x.Email == email);
-            if (account == null && account.Status != AccountStatus.Active)
+            if (account == null && account.Status != Status.Active)
                 return MessageStatus.AccountNotFound;
             account.ResetPasswordToken = CreateRandomToken();
             account.ResetPasswordTokenExpiry = DateTime.Now.AddMinutes(15);
@@ -363,7 +363,7 @@ namespace API_Test1.Services.AccountServices
                 Email = account.Email,
                 UserName = account.UserName,
                 SecurityStamp = Guid.NewGuid().ToString(),
-                Status = AccountStatus.Active,
+                Status = Status.Active,
                 CreateAt = DateTime.Now
             };
 
@@ -447,7 +447,7 @@ namespace API_Test1.Services.AccountServices
         {
             //chuyển active sang locked
             var account = await _userManager.FindByIdAsync(userID);
-            account.Status = AccountStatus.Disabled;
+            account.Status = Status.Disabled;
             return MessageStatus.Success;
         }
         public async Task<PageInfo<AccountInfo>> GetAllUserAsync(Pagination page)

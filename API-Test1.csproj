@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.61.0.3120" />
     <PackageReference Include="MailKit" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.10" />
@@ -32,6 +33,11 @@
     <Content Update="client_secret.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\CartServices\" />
+    <Folder Include="Services\OrderServices\" />
   </ItemGroup>
 
 </Project>

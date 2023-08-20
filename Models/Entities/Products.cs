@@ -17,7 +17,7 @@ namespace API_Test1.Models.Entities
         public string? AvatarImageProduct { get; set; }
         public string? Title { get; set; }
         public int? Discount { get; set; }
-        public int? Status { get; set; }
+        public string? Status { get; set; }
         public int? NumberOfViews { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }

@@ -20,7 +20,7 @@ namespace API_Test1.Models.Entities
         public string? ContentRated { get; set; }
         public int PointEvaluation { get; set; }
         public string? ContentSeen { get; set; }
-        public int Status { get; set; }
+        public string? Status { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
     }

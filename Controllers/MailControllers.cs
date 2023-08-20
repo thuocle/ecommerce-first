@@ -4,11 +4,11 @@ namespace API_Test1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MailController : ControllerBase
+    public class MailControllers : ControllerBase
     {
         private readonly IMailServices _mailServices;
 
-        public MailController(IMailServices mailServices)
+        public MailControllers(IMailServices mailServices)
         {
             _mailServices = mailServices;
         }
