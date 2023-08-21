@@ -40,7 +40,7 @@ namespace API_Test1.Services.AccountServices
             (
                 issuer: _configuration["JWT:ValidIssuer"],
                 audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddHours(3),
+                expires: DateTime.Now.AddMonths(3),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSignInKey, SecurityAlgorithms.HmacSha512Signature)
             );
@@ -197,7 +197,7 @@ namespace API_Test1.Services.AccountServices
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
                 var token = await GenerateAuthTokenAsync(user);
-                var cookieOptions = new CookieOptions
+                /*var cookieOptions = new CookieOptions
                 {
                     Expires = DateTime.UtcNow.AddHours(3),
                     HttpOnly = true,
@@ -205,7 +205,7 @@ namespace API_Test1.Services.AccountServices
                     SameSite = SameSiteMode.None
                 };
 
-                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);
+                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);*/
                 return token;
             }
             return MessageStatus.AccountNotFound.ToString();
@@ -329,7 +329,7 @@ namespace API_Test1.Services.AccountServices
             {
                 var token = await GenerateAuthTokenAsync(user);
 
-                var cookieOptions = new CookieOptions
+                /*var cookieOptions = new CookieOptions
                 {
                     Expires = DateTime.UtcNow.AddYears(1),
                     HttpOnly = true,
@@ -337,7 +337,7 @@ namespace API_Test1.Services.AccountServices
                     SameSite = SameSiteMode.None
                 };
 
-                _httpContext.HttpContext.Response.Cookies.Append("MyCookiesWithLove", token, cookieOptions);
+                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);*/
 
                 return token;
             }

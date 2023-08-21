@@ -5,11 +5,13 @@ namespace API_Test1.Services.CartServices
     public class CartServices : ICartServices
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ApplicationDbContext _dbContext;
         private const string CART_COOKIE_NAME = "CartItems";
 
-        public CartServices(IHttpContextAccessor httpContextAccessor)
+        public CartServices(IHttpContextAccessor httpContextAccessor, ApplicationDbContext dbContext)
         {
             _httpContextAccessor = httpContextAccessor;
+            _dbContext = dbContext;
         }
         #region private
         private void UpdateCartItems(List<CartItem> cartItems)
@@ -41,14 +43,15 @@ namespace API_Test1.Services.CartServices
         {
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);
-
+            var product = await Task.FromResult(_dbContext.Products.FirstOrDefaultAsync(x=> x.ProductID == productId)); 
             if (existingItem != null)
             {
                 existingItem.Quantity++;
             }
             else
             {
-                cartItems.Add(new CartItem { ProductId = productId, Quantity = 1 });
+                cartItems.Add(new CartItem { ProductId = productId, Quantity = 1, 
+                        Price = product.Result.Price, ProductName = product.Result.NameProduct, DiscountPercentage= product.Result.Discount });
             }
 
             UpdateCartItems(cartItems);
@@ -72,15 +75,9 @@ namespace API_Test1.Services.CartServices
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);
 
-            if (existingItem != null)
+            if (existingItem != null && existingItem.Quantity > 1)
             {
                 existingItem.Quantity--;
-
-                if (existingItem.Quantity <= 0)
-                {
-                    cartItems.Remove(existingItem);
-                }
-
                 UpdateCartItems(cartItems);
             }
             return MessageStatus.Success;
