@@ -4,6 +4,7 @@
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+
         }
         public virtual DbSet<ProductTypes> ProductTypes { get; set; }
         public virtual DbSet<Products> Products { get; set; }

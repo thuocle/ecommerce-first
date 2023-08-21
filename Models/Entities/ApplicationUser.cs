@@ -1,4 +1,6 @@
-﻿namespace API_Test1.Models.Entities
+﻿using API_Test1.Base;
+
+namespace API_Test1.Models.Entities
 {
     public class ApplicationUser : IdentityUser
     {
@@ -10,7 +12,7 @@
         public DateTime? VerifyTokenExpiry { get; set; } = null;
         public string? ResetPasswordToken { get; set; } = string.Empty;
         public DateTime? ResetPasswordTokenExpiry { get; set; } = null;
-        public DateTime? CreateAt { get; set; } = null;
+        public DateTime? CreateAt { get; set; } = DateTime.Now;
         public DateTime? UpdateAt { get; set; } = null;
     }
 }

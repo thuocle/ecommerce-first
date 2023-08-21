@@ -7,7 +7,7 @@ namespace API_Test1.Models.Entities
     public class Orders
     {
         [Key]
-        public int OrderID { get; set; }
+        public string? OrderID { get; set; } = string.Empty;
 
         //foreign key
         [ForeignKey("Payments")]
@@ -15,16 +15,16 @@ namespace API_Test1.Models.Entities
         [JsonIgnore]
         public Payments? Payments { get; set; }
         [ForeignKey("ApplicationUser")]
-        public int Id { get; set; }
+        public string? Id { get; set; }
         [JsonIgnore]
         public ApplicationUser? ApplicationUser { get; set; }
         public double OriginalPrice { get; set; }
         public double ActualPrice { get; set; }
-        public string? FullName { get; set; }
-        public string? Email { get; set; }
-        public string? Phone { get; set; }
+        public string? FullName { get; set; } = string.Empty;
+        public string? Email { get; set; } = string.Empty;
+        public string? Phone { get; set; } = string.Empty;
 
-        public string? Address { get; set; }
+        public string? Address { get; set; } = string.Empty;
         //foreign key
         [ForeignKey("OrderStatuses")]
         public int OrderStatusID { get; set; }

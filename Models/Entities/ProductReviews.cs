@@ -14,7 +14,7 @@ namespace API_Test1.Models.Entities
         [JsonIgnore]
         public Products? Products { get; set; }
         [ForeignKey("ApplicationUser")]
-        public int Id { get; set; }
+        public string? Id { get; set; }
         [JsonIgnore]
         public ApplicationUser? ApplicationUser { get; set; }
         public string? ContentRated { get; set; }

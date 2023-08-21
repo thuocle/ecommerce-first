@@ -9,7 +9,7 @@ namespace API_Test1.Models.Entities
         public int OrderDetailID { get; set; }
         //foreign key
         [ForeignKey("Orders")]
-        public int OrderID { get; set; }
+        public string? OrderID { get; set; }
         [JsonIgnore]
         public Orders? Orders { get; set; }
         [ForeignKey("Products")]
