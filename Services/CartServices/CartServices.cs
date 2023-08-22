@@ -57,6 +57,7 @@ namespace API_Test1.Services.CartServices
             UpdateCartItems(cartItems);
             return MessageStatus.Success;
         }
+        //xoa 1 san pham trong gio hang
         public async Task<MessageStatus> RemoveFromCart(int productId)
         {
             var cartItems = GetCartItems();
@@ -69,7 +70,7 @@ namespace API_Test1.Services.CartServices
             }
             return MessageStatus.Success;
         }
-
+        //giam so luong
         public async Task<MessageStatus> DecreaseQuantity(int productId)
         {
             var cartItems = GetCartItems();
@@ -82,6 +83,7 @@ namespace API_Test1.Services.CartServices
             }
             return MessageStatus.Success;
         }
+        //tang so luong 
         public async Task<MessageStatus> IncreaseQuantity(int productId)
         {
             var cartItems = GetCartItems();
@@ -93,6 +95,60 @@ namespace API_Test1.Services.CartServices
                 UpdateCartItems(cartItems);
             }
             return MessageStatus.Success;
+        }
+        //tong so luong sp
+        public int? GetTotalQuantity()
+        {
+            var cartItems = GetCartItems();
+            int? totalQuantity = 0;
+            foreach (var cartItem in cartItems)
+            {
+                totalQuantity += cartItem.Quantity;
+            }
+            return totalQuantity;
+        }
+        //tong tien goc cua gio hang
+        public double? GetOriginalTotalPrice()
+        {
+            var cartItems = GetCartItems();
+            double? OriginaltotalPrice = 0;
+            foreach (var cartItem in cartItems)
+            {
+                OriginaltotalPrice += cartItem.Quantity * cartItem.Price ;
+            }
+            return OriginaltotalPrice;
+        } 
+        //tong ttien sau khi giam gia
+        public double? GetTotalPrice()
+        {
+            var cartItems = GetCartItems();
+            double? totalPrice = GetOriginalTotalPrice();
+            foreach (var cartItem in cartItems)
+            {
+                int? discountPercentage = cartItem.DiscountPercentage;
+                double? discountAmount = cartItem.Price * (discountPercentage / 100);
+                totalPrice -= discountAmount * cartItem.Quantity;
+            }
+            return totalPrice;
+        }
+        //xoa tat ca gio hang
+        public async Task<MessageStatus> ClearCart()
+        {
+            var cookieOptions = new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-1)
+            };
+
+            _httpContextAccessor.HttpContext.Response.Cookies.Delete(CART_COOKIE_NAME);
+            await Task.CompletedTask;
+
+            return MessageStatus.Success;
+        }
+
+        public bool IsCartEmpty()
+        {
+            var cartItems = GetCartItems();
+            return cartItems.Count == 0;
         }
     }
 }

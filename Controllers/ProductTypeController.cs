@@ -1,7 +1,4 @@
-﻿using API_Test1.Services.ProductServices;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
+﻿using API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices;
 namespace API_Test1.Controllers
 {
     [Route("api/[controller]")]

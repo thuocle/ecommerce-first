@@ -1,4 +1,4 @@
-﻿namespace API_Test1.Services.ProductServices
+﻿namespace API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices
 {
     public class ProductTypeServices : IProductTypeServices
     {
@@ -56,6 +56,6 @@
             return await _dbContext.ProductTypes.FindAsync(productTypeId);
         }
 
-        
+
     }
 }

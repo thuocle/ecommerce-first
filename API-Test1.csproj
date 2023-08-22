@@ -35,7 +35,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\OrderServices\" />
+    <Folder Include="Services\PaymentServices\VNPay\" />
+    <Folder Include="Services\ProductServices\ProductImageServices\" />
   </ItemGroup>
 
 </Project>

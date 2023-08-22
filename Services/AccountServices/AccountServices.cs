@@ -197,15 +197,14 @@ namespace API_Test1.Services.AccountServices
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
                 var token = await GenerateAuthTokenAsync(user);
-                /*var cookieOptions = new CookieOptions
+                var cookieOptions = new CookieOptions
                 {
-                    Expires = DateTime.UtcNow.AddHours(3),
+                    Expires = DateTime.UtcNow.AddMonths(1),
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None
                 };
-
-                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);*/
+                _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);
                 return token;
             }
             return MessageStatus.AccountNotFound.ToString();

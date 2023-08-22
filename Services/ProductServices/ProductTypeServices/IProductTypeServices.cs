@@ -1,4 +1,4 @@
-﻿namespace API_Test1.Services.ProductServices
+﻿namespace API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices
 {
     public interface IProductTypeServices
     {

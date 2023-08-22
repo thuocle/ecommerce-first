@@ -1,4 +1,5 @@
 ﻿using API_Test1.Services.CartServices;
+using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
 
 namespace API_Test1.Services.OrderServices
@@ -10,54 +11,73 @@ namespace API_Test1.Services.OrderServices
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
         private readonly IMoMoServices _moMoServices;
+        private readonly IJwtServices _jwtServices;
         private const string CART_COOKIE_NAME = "CartItems";
-        private const string USER_COOKIE_NAME = "jwt";
-        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices)
+        private const string USER_COOKIE_NAME = "User";
+        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices)
         {
             _httpContextAccessor = httpContextAccessor;
             _cartServices = cartServices;
             _dbContext = dbContext;
             _configuration = configuration;
             _moMoServices = moMoServices;
+            _jwtServices = jwtServices;
         }
+        #region private
+        private double? CalculateOriginalPrice(List<CartItem> cartItems)
+        {
+            // Tính toán giá trị tổng cộng của các mục giỏ hàng
+            double? originalPrice = 0;
+
+            foreach (var cartItem in cartItems)
+            {
+                originalPrice += cartItem.Quantity * cartItem.Price;
+            }
+
+            return originalPrice;
+        }
+
+        private double? CalculateActualPrice(double? originalPrice, List<CartItem> cartItems)
+        {
+            // Xử lý logic tính toán giá trị thực tế của hóa đơn
+            double? actualPrice = originalPrice;
+
+            foreach (var cartItem in cartItems)
+            {
+                int? discountPercentage = cartItem.DiscountPercentage;
+                double? discountAmount = cartItem.Price * (discountPercentage/100);
+                actualPrice -= discountAmount * cartItem.Quantity;
+            }
+
+            return actualPrice;
+        }
+        #endregion
+        #region for admin
+        public async Task<PageInfo<Orders>> GetAllOrder(Pagination page)
+        {
+            var query = _dbContext.Orders.AsQueryable();
+            var data = PageInfo<Orders>.ToPageInfo(page, query);
+            page.TotalItem = await query.CountAsync();
+            return new PageInfo<Orders>(page, data);
+        }
+        public async Task<PageInfo<OrderDetails>> GetAllOrderDetail(Pagination page)
+        {
+            var query = _dbContext.OrderDetails.AsQueryable();
+            var data = PageInfo<OrderDetails>.ToPageInfo(page, query);
+            page.TotalItem = await query.CountAsync();
+            return new PageInfo<OrderDetails>(page, data);
+        }
+        #endregion
+
         public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
         {
             var cartItems = _cartServices.GetCartItems();
             var newOrder = new Orders();
-            // Kiểm tra xem có tồn tại cookie người dùng không
-            if (_httpContextAccessor.HttpContext.Request.Cookies.TryGetValue(USER_COOKIE_NAME, out var token))
+            // Kiểm tra xem user co login khi đặt hàng không: có -> lưu id, không-> mua không lưu id
+            if (_jwtServices.IsUserLoggedIn())
             {
-                // Giải mã token
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["JWT:Secret"]); // Thay thế YOUR_SECRET_KEY bằng khóa bí mật của bạn
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
-                };
-
-                try
-                {
-                    var claimsPrincipal = tokenHandler.ValidateToken(token, validationParameters, out _);
-
-                    // Trích xuất thông tin người dùng từ các claim
-                    var userNameClaim = claimsPrincipal.FindFirst("username");
-                    if (userNameClaim != null)
-                    {
-                        var userName = userNameClaim.Value;
-                        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.UserName == userName);
-                        newOrder.UserId = user.Id;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Xử lý lỗi khi giải mã token thất bại
-                    // ...
-                }
+                newOrder.UserId = _jwtServices.GetUserId();
             }
-
             // Xử lý thông tin giỏ hàng và tính toán thành hóa đơn
             var originalPrice = CalculateOriginalPrice(cartItems);
             var actualPrice = CalculateActualPrice(originalPrice, cartItems);
@@ -84,6 +104,7 @@ namespace API_Test1.Services.OrderServices
                     return MessageStatus.Failed;
                 }
             }
+            //lưu đon hàng v
             _dbContext.Orders.Add(newOrder);
             await _dbContext.SaveChangesAsync();
 
@@ -96,7 +117,8 @@ namespace API_Test1.Services.OrderServices
                     ProductID = cartItem.ProductId,
                     Quantity = cartItem.Quantity,
                     PriceTotal = cartItem.Price,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
                 _dbContext.OrderDetails.Add(orderItem);
@@ -115,32 +137,46 @@ namespace API_Test1.Services.OrderServices
 
             return MessageStatus.Success;
         }
-        private double? CalculateOriginalPrice(List<CartItem> cartItems)
+
+       
+        public async Task<IEnumerable<OrderDetails>> GetOrderDetail(string orderID)
         {
-            // Tính toán giá trị tổng cộng của các mục giỏ hàng
-            double? originalPrice = 0;
-
-            foreach (var cartItem in cartItems)
-            {
-                originalPrice += cartItem.Quantity * cartItem.Price;
-            }
-
-            return originalPrice;
+            var query = await Task.FromResult(_dbContext.OrderDetails.Where(x => x.OrderID == orderID).AsQueryable());
+            return query;
         }
 
-        private double? CalculateActualPrice(double? originalPrice, List<CartItem> cartItems)
+        public async Task<MessageStatus> UpdateStatusOrder(int statusId, string orderId)
         {
-            // Xử lý logic tính toán giá trị thực tế của hóa đơn
-            double? actualPrice = originalPrice;
-
-            foreach (var cartItem in cartItems)
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
+            if (order == null)
             {
-                int? discountPercentage = cartItem.DiscountPercentage;
-                double? discountAmount = cartItem.Price * discountPercentage;
-                actualPrice -= discountAmount * cartItem.Quantity;
+                return MessageStatus.Failed;
             }
+            order.UpdatedAt = DateTime.Now;
+            order.OrderStatusID = statusId;
+            await _dbContext.SaveChangesAsync();
 
-            return actualPrice;
+            return MessageStatus.Success;
         }
+
+        public async Task<PageInfo<Orders>> GetAllOrderForUser(Pagination page, string userID)
+        {
+            var query = _dbContext.Orders
+                .Where(o => o.UserId == userID)
+                .AsQueryable();
+            var data = PageInfo<Orders>.ToPageInfo(page, query);
+            page.TotalItem = await query.CountAsync();
+            return new PageInfo<Orders>(page, data);
+        }
+        public async Task<IEnumerable<OrderDetails>> FindOrderById(string orderID)
+        {
+
+            var orderDetails = await _dbContext.OrderDetails
+                .Where(od => od.OrderID == orderID)
+                .ToListAsync();
+            return orderDetails;
+        }
+
+
     }
 }

@@ -23,6 +23,9 @@ global using API_Test1.Models.DTOs;
 using Microsoft.AspNetCore.CookiePolicy;
 using API_Test1.Services.FileServices;
 using API_Test1.Services.ProductServices;
+using API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices;
+using API_Test1.Services.CartServices;
+using API_Test1.Services.OrderServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,12 +40,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 //life cycle
 builder.Services.AddScoped<IAccountServices, AccountServices>();
 builder.Services.AddScoped<IMailServices, MailServices>();
-builder.Services.AddScoped< IFileServices, FileServices>();
+builder.Services.AddScoped<IFileServices, FileServices>();
 builder.Services.AddScoped<IProductServices, ProductService>();
+builder.Services.AddScoped<IProductTypeServices, ProductTypeServices>();
+builder.Services.AddScoped<ICartServices, CartServices>();
+builder.Services.AddScoped<IOrderServices, OrderServices>();
 
 //http
 builder.Services.AddHttpContextAccessor();
 //cookies policy
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "Login";
+});
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.None;
