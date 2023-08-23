@@ -29,9 +29,9 @@ namespace API_Test1.Controllers
         }
 
         [HttpPost("remove")]
-        public async Task<IActionResult> RemoveFromCart(int productId)
+        public IActionResult RemoveFromCart(int productId)
         {
-            var result = await _cartServices.RemoveFromCart(productId);
+            var result = _cartServices.RemoveFromCart(productId);
             if (result == MessageStatus.Success)
             {
                 return Ok("Item removed from cart.");
@@ -40,9 +40,9 @@ namespace API_Test1.Controllers
         }
 
         [HttpPost("decrease")]
-        public async Task<IActionResult> DecreaseQuantity(int productId)
+        public IActionResult DecreaseQuantity(int productId)
         {
-            var result = await _cartServices.DecreaseQuantity(productId);
+            var result =  _cartServices.DecreaseQuantity(productId);
             if (result == MessageStatus.Success)
             {
                 return Ok("Quantity decreased.");
@@ -51,9 +51,9 @@ namespace API_Test1.Controllers
         }
 
         [HttpPost("increase")]
-        public async Task<IActionResult> IncreaseQuantity(int productId)
+        public IActionResult IncreaseQuantity(int productId)
         {
-            var result = await _cartServices.IncreaseQuantity(productId);
+            var result =  _cartServices.IncreaseQuantity(productId);
             if (result == MessageStatus.Success)
             {
                 return Ok("Quantity increased.");

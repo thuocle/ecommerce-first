@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-
 namespace API_Test1.Services.CartServices
 {
     public class CartServices : ICartServices
@@ -59,7 +58,7 @@ namespace API_Test1.Services.CartServices
             return MessageStatus.Success;
         }
         //xoa 1 san pham trong gio hang
-        public async Task<MessageStatus> RemoveFromCart(int productId)
+        public MessageStatus RemoveFromCart(int productId)
         {
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);
@@ -72,7 +71,7 @@ namespace API_Test1.Services.CartServices
             return MessageStatus.Success;
         }
         //giam so luong
-        public async Task<MessageStatus> DecreaseQuantity(int productId)
+        public MessageStatus DecreaseQuantity(int productId)
         {
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);
@@ -85,7 +84,7 @@ namespace API_Test1.Services.CartServices
             return MessageStatus.Success;
         }
         //tang so luong 
-        public async Task<MessageStatus> IncreaseQuantity(int productId)
+        public MessageStatus IncreaseQuantity(int productId)
         {
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);

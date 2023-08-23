@@ -1,6 +1,6 @@
 ﻿namespace API_Test1.Services.JwtServices
 {
-    public class JwtServices
+    public class JwtServices : IJwtServices
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;

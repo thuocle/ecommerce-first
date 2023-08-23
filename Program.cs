@@ -26,6 +26,10 @@ using API_Test1.Services.ProductServices;
 using API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices;
 using API_Test1.Services.CartServices;
 using API_Test1.Services.OrderServices;
+using API_Test1.Services.OrderstatusServices;
+using API_Test1.Services.JwtServices;
+using API_Test1.Services.PaymentServices.MOMO;
+using API_Test1.Services.PaymentServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,9 +49,14 @@ builder.Services.AddScoped<IProductServices, ProductService>();
 builder.Services.AddScoped<IProductTypeServices, ProductTypeServices>();
 builder.Services.AddScoped<ICartServices, CartServices>();
 builder.Services.AddScoped<IOrderServices, OrderServices>();
+builder.Services.AddScoped<IJwtServices, JwtServices>();
+builder.Services.AddScoped<IMoMoServices, MoMoServices>();
+builder.Services.AddScoped<IPaymentServices, PaymentServices>();
+builder.Services.AddScoped<IOrderstatusServices, OrderstatusServices>();
 
 //http
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 //cookies policy
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -84,6 +93,16 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]))
         };
     });
+//add cors
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -95,8 +114,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

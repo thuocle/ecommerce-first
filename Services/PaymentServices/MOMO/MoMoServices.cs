@@ -6,7 +6,7 @@ using System.Net.Http;
 
 namespace API_Test1.Services.PaymentServices.MOMO
 {
-    public class MoMoServices
+    public class MoMoServices : IMoMoServices
     {
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;

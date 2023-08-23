@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.Serialization;
 
 namespace API_Test1.Models.Entities
 {
@@ -10,8 +11,10 @@ namespace API_Test1.Models.Entities
         //foreign key
         [ForeignKey("ProductTypes")]
         public int ProductTypeID { get; set; }
-        [JsonIgnore]
+
+        [IgnoreDataMember]
         public ProductTypes? ProductTypes { get; set; }
+
         public string? NameProduct { get; set; }
         public double? Price { get; set; }
         public string? AvatarImageProduct { get; set; }
@@ -23,11 +26,13 @@ namespace API_Test1.Models.Entities
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         //1-n
-        [JsonIgnore]
+        [IgnoreDataMember]
         public IEnumerable<ProductReviews>? ProductReviews { get; set; }
-        [JsonIgnore]
+
+        [IgnoreDataMember]
         public IEnumerable<ProductImages>? ProductImages { get; set; }
-        [JsonIgnore]
+
+        [IgnoreDataMember]
         public IEnumerable<OrderDetails>? OrderDetails { get; set; }
     }
 }

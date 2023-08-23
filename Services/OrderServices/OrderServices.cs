@@ -26,6 +26,7 @@ namespace API_Test1.Services.OrderServices
             _jwtServices = jwtServices;
             _mailServices = mailServices;
         }
+
         #region private
         private double? CalculateOriginalPrice(List<CartItem> cartItems)
         {
@@ -55,6 +56,9 @@ namespace API_Test1.Services.OrderServices
             return actualPrice;
         }
         #endregion
+
+
+
         #region for admin
         //xem danh sách đơn hàng
         public async Task<PageInfo<Orders>> GetAllOrder(Pagination page)
@@ -67,11 +71,14 @@ namespace API_Test1.Services.OrderServices
         // xem danh sách chi tiết đơn 
         public async Task<PageInfo<OrderDetails>> GetAllOrderDetail(Pagination page)
         {
-            var query = _dbContext.OrderDetails.AsQueryable();
+            var query = _dbContext.OrderDetails
+                        .OrderByDescending(x => x.UpdatedAt)
+                        .AsQueryable();
             var data = PageInfo<OrderDetails>.ToPageInfo(page, query);
             page.TotalItem = await query.CountAsync();
             return new PageInfo<OrderDetails>(page, data);
         }
+        //admin cập nhật các trangj thái đơn
         public async Task<MessageStatus> UpdateStatusOrderByAdmin(int statusId, string orderId)
         {
             var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
@@ -113,6 +120,9 @@ namespace API_Test1.Services.OrderServices
             return MessageStatus.Success;
         }
         #endregion
+
+
+
         //Đặt hàng 
         public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
         {
@@ -314,12 +324,13 @@ namespace API_Test1.Services.OrderServices
         {
             var query = _dbContext.Orders
                 .Where(o => o.UserId == userID)
+                .OrderByDescending(x=>x.UpdatedAt)
                 .AsQueryable();
             var data = PageInfo<Orders>.ToPageInfo(page, query);
             page.TotalItem = await query.CountAsync();
             return new PageInfo<Orders>(page, data);
         }
-        //timg hóa đơn theo id
+        //tim hóa đơn theo id
         public async Task<IEnumerable<OrderDetails>> FindOrderById(string orderID)
         {
 

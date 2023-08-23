@@ -42,6 +42,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
             var reviews = from pr in _dbContext.ProductReviews
                           join u in _dbContext.Users on pr.UserId equals u.Id
                           where pr.ProductID == productId
+                          orderby pr.CreatedAt descending
                           select new
                           {
                               pr,
@@ -109,6 +110,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
                             from pr in _dbContext.ProductReviews
                             join u in _dbContext.Users on pr.UserId equals u.Id
                             where pr.ProductID == productId && pr.Status == Status.Active
+                            orderby pr.CreatedAt descending
                             select new ProductReviewDTO
                             {
                                 UserName = u.UserName,

@@ -6,17 +6,15 @@ namespace API_Test1.Controllers
     [ApiController]
     public class ProductControllers : ControllerBase
     {
-        public class ProductController : ControllerBase
-        {
             private readonly IProductServices _productService;
 
-            public ProductController(IProductServices productService)
+            public ProductControllers(IProductServices productService)
             {
                 _productService = productService;
             }
 
             [HttpPost("AddProduct")]
-            public async Task<IActionResult> AddProduct(ProductModel productModel)
+            public async Task<IActionResult> AddProduct([FromForm]ProductModel productModel)
             {
                 if (!ModelState.IsValid)
                 {
@@ -79,7 +77,7 @@ namespace API_Test1.Controllers
                 return Ok(result);
             }
 
-            [HttpGet("GetAllAdmin")]
+            [HttpGet("getallforAdmin")]
             public async Task<IActionResult> GetAllProductsForAdmin([FromQuery] Pagination page)
             {
                 var result = await _productService.GetAllProductForAdminAsync(page);
@@ -159,5 +157,4 @@ namespace API_Test1.Controllers
                 return Ok(result);
             }
         }
-    }
 }
