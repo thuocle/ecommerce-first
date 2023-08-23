@@ -39,6 +39,7 @@ namespace API_Test1.Services.CartServices
             }
             return new List<CartItem>();
         }
+        //them vao gio hàng
         public async Task<MessageStatus> AddToCart(int productId)
         {
             var cartItems = GetCartItems();

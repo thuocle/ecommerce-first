@@ -4,7 +4,7 @@
     {
         #region admin
         public Task<PageInfo<Orders>> GetAllOrder(Pagination page);
-        public Task<MessageStatus> UpdateStatusOrder(int statusId, string orderId);
+        public Task<MessageStatus> UpdateStatusOrderByAdmin(int statusId, string orderId);
         public Task<PageInfo<OrderDetails>> GetAllOrderDetail(Pagination page);
 
         #endregion
@@ -13,6 +13,7 @@
         #endregion
         #region anonymous
         public Task<MessageStatus> CreateOrder(OrderInfo orderInfo);
+        public Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId);
         public Task<IEnumerable<OrderDetails>> GetOrderDetail(string orderID);
         public Task<IEnumerable<OrderDetails>> FindOrderById(string orderID);
 

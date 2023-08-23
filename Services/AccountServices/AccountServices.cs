@@ -86,7 +86,6 @@ namespace API_Test1.Services.AccountServices
                 VerifyToken = CreateRandomToken(),
                 VerifyTokenExpiry = DateTime.Now.AddMinutes(15),
                 CreateAt = DateTime.Now
-
             };
             //thêm vào DB
             var result = await _userManager.CreateAsync(account, registerModel.Password);

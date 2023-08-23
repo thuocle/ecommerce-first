@@ -11,6 +11,12 @@ namespace API_Test1.Controllers
         {
             _cartServices = cartServices;
         }
+        [HttpGet]
+        public IActionResult GetCartItems()
+        {
+            var cartItems = _cartServices.GetCartItems();
+            return Ok(cartItems);
+        }
         [HttpPost("add")]
         public async Task<IActionResult> AddToCart(int productId)
         {
@@ -53,6 +59,43 @@ namespace API_Test1.Controllers
                 return Ok("Quantity increased.");
             }
             return BadRequest("Failed to increase quantity.");
+        }
+        [HttpGet("quantity")]
+        public IActionResult GetTotalQuantity()
+        {
+            var totalQuantity = _cartServices.GetTotalQuantity();
+            return Ok(totalQuantity);
+        }
+
+        [HttpGet("originaltotalprice")]
+        public IActionResult GetOriginalTotalPrice()
+        {
+            var originalTotalPrice = _cartServices.GetOriginalTotalPrice();
+            return Ok(originalTotalPrice);
+        }
+
+        [HttpGet("totalprice")]
+        public IActionResult GetTotalPrice()
+        {
+            var totalPrice = _cartServices.GetTotalPrice();
+            return Ok(totalPrice);
+        }
+
+        [HttpPost("clear")]
+        public async Task<IActionResult> ClearCart()
+        {
+            var result = await _cartServices.ClearCart();
+            if (result == MessageStatus.Success)
+                return Ok();
+            else
+                return BadRequest();
+        }
+
+        [HttpGet("isempty")]
+        public IActionResult IsCartEmpty()
+        {
+            var isEmpty = _cartServices.IsCartEmpty();
+            return Ok(isEmpty);
         }
     }
 }

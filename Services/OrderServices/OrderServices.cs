@@ -1,4 +1,5 @@
-﻿using API_Test1.Services.CartServices;
+﻿using API_Test1.Models.ViewModels;
+using API_Test1.Services.CartServices;
 using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
 
@@ -12,9 +13,10 @@ namespace API_Test1.Services.OrderServices
         private readonly IConfiguration _configuration;
         private readonly IMoMoServices _moMoServices;
         private readonly IJwtServices _jwtServices;
+        private readonly IMailServices _mailServices;
         private const string CART_COOKIE_NAME = "CartItems";
         private const string USER_COOKIE_NAME = "User";
-        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices)
+        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices, IMailServices mailServices)
         {
             _httpContextAccessor = httpContextAccessor;
             _cartServices = cartServices;
@@ -22,6 +24,7 @@ namespace API_Test1.Services.OrderServices
             _configuration = configuration;
             _moMoServices = moMoServices;
             _jwtServices = jwtServices;
+            _mailServices = mailServices;
         }
         #region private
         private double? CalculateOriginalPrice(List<CartItem> cartItems)
@@ -53,6 +56,7 @@ namespace API_Test1.Services.OrderServices
         }
         #endregion
         #region for admin
+        //xem danh sách đơn hàng
         public async Task<PageInfo<Orders>> GetAllOrder(Pagination page)
         {
             var query = _dbContext.Orders.AsQueryable();
@@ -60,6 +64,7 @@ namespace API_Test1.Services.OrderServices
             page.TotalItem = await query.CountAsync();
             return new PageInfo<Orders>(page, data);
         }
+        // xem danh sách chi tiết đơn 
         public async Task<PageInfo<OrderDetails>> GetAllOrderDetail(Pagination page)
         {
             var query = _dbContext.OrderDetails.AsQueryable();
@@ -67,8 +72,48 @@ namespace API_Test1.Services.OrderServices
             page.TotalItem = await query.CountAsync();
             return new PageInfo<OrderDetails>(page, data);
         }
-        #endregion
+        public async Task<MessageStatus> UpdateStatusOrderByAdmin(int statusId, string orderId)
+        {
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
+            if (order == null)
+                return MessageStatus.Failed;
 
+            var currentStatus = order.OrderStatusID;
+
+            switch (statusId)
+            {
+                //đơn đã đặt -> đang chuẩn bị
+                case OrderStatus.Preparing:
+                    if (currentStatus == OrderStatus.Placed)
+                        order.OrderStatusID = statusId;
+                    break;
+                    //đơn đang chuẩn bị -> đnag vận chuyển
+                case OrderStatus.Shipping:
+                    if (currentStatus == OrderStatus.Preparing)
+                        order.OrderStatusID = statusId;
+                    break;
+                    // có yêu cầu hủy đơn => có thể hủy hoặc từ chối
+                case OrderStatus.CancelRejected:
+                case OrderStatus.Cancelled:
+                    if (currentStatus == OrderStatus.CancelRequest)
+                        order.OrderStatusID = statusId;
+                    break;
+                    //cos yc trả hàng => có thể trả hoặc từ chối
+                case OrderStatus.ReturnRejected:
+                case OrderStatus.Returned:
+                    if (currentStatus == OrderStatus.ReturnRequest)
+                        order.OrderStatusID = statusId;
+                    break;
+                default:
+                    return MessageStatus.Failed;
+            }
+
+            order.UpdatedAt = DateTime.Now;
+            await _dbContext.SaveChangesAsync();
+            return MessageStatus.Success;
+        }
+        #endregion
+        //Đặt hàng 
         public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
         {
             var cartItems = _cartServices.GetCartItems();
@@ -104,6 +149,82 @@ namespace API_Test1.Services.OrderServices
                     return MessageStatus.Failed;
                 }
             }
+            //gửi mail xác nhận
+            _mailServices.SendMail(new MailDTOs()
+            {
+                To = orderInfo.Email,
+                Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333333;
+        }}
+        
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+
+        .header {{
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+        }}
+
+        .content {{
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+        }}
+
+        .token {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #ff0000;
+        }}
+
+        .footer {{
+            padding: 10px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>Đặt hàng thành công</h2>
+        </div>
+        
+        <div class='content'>
+            <p>
+               <span> Hello ${orderInfo.FullName}!</span>
+               <br>
+               <span> Thank you for placing your order with [company’s name/e-store’s name]! We really appreciate that you chose our store, it means the world to us!</span>
+               <br>
+               <span> We want to let you know that we will inform you about the subsequent stages of order processing via separate emails.</span>
+               <br>
+               <span>Have a great day!</span>
+               <br>
+               
+            </p>
+        </div>
+        
+        <div class='footer'>
+            <span><b><i>The Love at HappyLucky
+</i></b></span>
+        </div>
+    </div>
+    <img src=""https://www.wordstream.com/wp-content/uploads/2022/07/full-size-thank-you-for-your-order-images-13.png"" alt=""Cảm ơn bạn đã đặt hàng"" >
+</body>
+</html>",
+                Subject = "Đặt hàng thành công!"
+            });
             //lưu đon hàng v
             _dbContext.Orders.Add(newOrder);
             await _dbContext.SaveChangesAsync();
@@ -138,27 +259,57 @@ namespace API_Test1.Services.OrderServices
             return MessageStatus.Success;
         }
 
-       
+       //xem chi tiết hóa đơn
         public async Task<IEnumerable<OrderDetails>> GetOrderDetail(string orderID)
         {
             var query = await Task.FromResult(_dbContext.OrderDetails.Where(x => x.OrderID == orderID).AsQueryable());
             return query;
         }
-
-        public async Task<MessageStatus> UpdateStatusOrder(int statusId, string orderId)
+        // cập nhật trạng thái đơn hàng for user
+        public async Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId)
         {
             var order = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
             if (order == null)
-            {
                 return MessageStatus.Failed;
-            }
-            order.UpdatedAt = DateTime.Now;
-            order.OrderStatusID = statusId;
-            await _dbContext.SaveChangesAsync();
 
+            var currentStatus = order.OrderStatusID;
+
+            switch (statusId)
+            {
+                //có thể hủy đơn khi đã đặt hàng và chuẩn bị hàng
+                case OrderStatus.CancelRequest:
+                    if (currentStatus == OrderStatus.Placed || currentStatus == OrderStatus.Preparing)
+                        order.OrderStatusID = statusId;
+                    break;
+                //xác nhận đã nhận hàng khi đang vận chuyển => hoàn thành
+                case OrderStatus.Delivered:
+                    if (currentStatus == OrderStatus.Shipping)
+                        order.OrderStatusID = (int)OrderStatus.Completed;
+                    break;
+                //yêu cầu hủy trả hàng khi đơn đã hoàn thành
+                case OrderStatus.ReturnRequest:
+                    if (currentStatus == OrderStatus.Completed)
+                        order.OrderStatusID = statusId;
+                    break;
+                    // khi đơn đã yêu cầu hủy, hoặc bị bên bán từ chôis => có thể chọn tiếp tục giao = đơn đang chuẩn bị
+                case OrderStatus.ResumingDelivery:
+                    if (currentStatus == OrderStatus.CancelRequest || currentStatus == OrderStatus.CancelRejected)
+                        order.OrderStatusID = (int)OrderStatus.Preparing;
+                    break; 
+                    //đơn đang là yêu cầu trả hàng, hoặc bị bên bán từ chối hủy, có thể hủy trả => đơn hoàn thành 
+                case OrderStatus.ReturnCancelled:
+                    if (currentStatus == OrderStatus.ReturnRequest || currentStatus == OrderStatus.ReturnRejected)
+                        order.OrderStatusID = (int)OrderStatus.Completed;
+                    break;
+                default:
+                    return MessageStatus.Failed;
+            }
+
+            order.UpdatedAt = DateTime.Now;
+            await _dbContext.SaveChangesAsync();
             return MessageStatus.Success;
         }
-
+        //lấy ra tất cả đơn hàng của 1 user
         public async Task<PageInfo<Orders>> GetAllOrderForUser(Pagination page, string userID)
         {
             var query = _dbContext.Orders
@@ -168,6 +319,7 @@ namespace API_Test1.Services.OrderServices
             page.TotalItem = await query.CountAsync();
             return new PageInfo<Orders>(page, data);
         }
+        //timg hóa đơn theo id
         public async Task<IEnumerable<OrderDetails>> FindOrderById(string orderID)
         {
 
@@ -176,7 +328,5 @@ namespace API_Test1.Services.OrderServices
                 .ToListAsync();
             return orderDetails;
         }
-
-
     }
 }

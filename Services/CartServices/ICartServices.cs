@@ -8,6 +8,7 @@
         public Task<MessageStatus> IncreaseQuantity(int productId);
         public Task<MessageStatus> DecreaseQuantity(int productId);
         public int? GetTotalQuantity();
+        public double? GetOriginalTotalPrice();
         public double? GetTotalPrice();
         public Task<MessageStatus> ClearCart();
         public bool IsCartEmpty();

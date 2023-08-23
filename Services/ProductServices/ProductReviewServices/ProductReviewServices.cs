@@ -14,6 +14,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
         }
 
         #region private
+        //check da mua san pham nay chua
         private bool CheckIfUserPurchasedProduct(string userId, int productId)
         {
             // Kiểm tra thông tin đơn hàng của người dùng
@@ -34,9 +35,8 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
         }
         #endregion
         
-       
-
         #region admin
+        //xem danh sách các review
         public async Task<PageInfo<dynamic>> GetAllProductReviews(int productId, Pagination page)
         {
             var reviews = from pr in _dbContext.ProductReviews
@@ -53,6 +53,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
             page.TotalItem = await reviews.CountAsync();
             return new PageInfo<dynamic>(page, data);
         }
+        //cap nhat satutus của review
         public async Task<MessageStatus> UpdateProductReviewStatus(int reviewId, string status)
         {
             var review = await _dbContext.ProductReviews.FirstOrDefaultAsync(x => x.ProductReviewID == reviewId);
@@ -120,6 +121,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
             page.TotalItem = await reviews.CountAsync();
             return new PageInfo<ProductReviewDTO>(page, data);
         }
+        //user cập nhật review
         public async Task<MessageStatus> UpdateProductReview(int reviewId, ReviewProductModel reviewProduct)
         {
             // Kiểm tra xem reviewId có tồn tại và thuộc về user hiện tại hay không
@@ -137,7 +139,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
 
             return MessageStatus.Success;
         }
-
+        //user xoa review
         public async Task<MessageStatus> RemoveProductReview(int reviewId)
         {
             var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync(pr => pr.ProductReviewID == reviewId && pr.UserId == _jwtServices.GetUserId());
