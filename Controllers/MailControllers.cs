@@ -11,7 +11,7 @@
             _mailServices = mailServices;
         }
         [HttpPost("sendMail")]
-        public IActionResult SendMail(MailDTOs request) 
+        public IActionResult SendMail([FromForm] MailDTOs request) 
         {
             var result = _mailServices.SendMail(request);
             return Ok(result);

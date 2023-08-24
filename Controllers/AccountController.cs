@@ -13,7 +13,7 @@
         #region for user
         [HttpPost]
         [Route("Register")]
-        public async Task<IActionResult> Register(RegisterForm registerModel)
+        public async Task<IActionResult> Register([FromForm] RegisterForm registerModel)
         {
             var re = await _accountServices.RegisterAsync(registerModel);
             if (re != MessageStatus.Success)
@@ -31,7 +31,7 @@
         }
         [HttpPost]
         [Route("Login")]
-        public async Task<IActionResult> Login(LoginForm loginModel)
+        public async Task<IActionResult> Login([FromForm] LoginForm loginModel)
         {
             var re = await _accountServices.LoginAsync(loginModel);
             if (re == null)
@@ -48,7 +48,7 @@
             return Ok(re);
         }
         [HttpPost("ResetPassword")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordForm resetPasswordModel)
+        public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordForm resetPasswordModel)
         {
             var re = await _accountServices.ResetPasswordAsync(resetPasswordModel);
             if (re != MessageStatus.Success)
@@ -83,7 +83,7 @@
         #region for Admin
         [HttpPost]
         [Route("registerAdmin")]
-        public async Task<IActionResult> RegisterAdmin(RegisterForm registerModel)
+        public async Task<IActionResult> RegisterAdmin([FromForm] RegisterForm registerModel)
         {
             var re = await _accountServices.RegisterAdminAsync(registerModel);
             if (re != MessageStatus.Success)
@@ -92,7 +92,7 @@
             return Ok("Thành công");
         }
         [HttpPost("LoginAdmin")]
-        public async Task<IActionResult> LoginAdmin(LoginForm loginModel)
+        public async Task<IActionResult> LoginAdmin([FromForm] LoginForm loginModel)
         {
             var result = await _accountServices.LoginAdminAsync(loginModel);
 
@@ -108,7 +108,7 @@
             return Ok(result);
         }
         [HttpPost("AddAccount")]
-        public async Task<IActionResult> AddAccount(AccountForm account)
+        public async Task<IActionResult> AddAccount([FromForm] AccountForm account)
         {
             var result = await _accountServices.AddAccountAsync(account);
 

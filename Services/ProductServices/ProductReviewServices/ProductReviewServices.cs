@@ -131,7 +131,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
         public async Task<MessageStatus> UpdateProductReview(int reviewId, ReviewProductForm reviewProduct)
         {
             // Kiểm tra xem reviewId có tồn tại và thuộc về user hiện tại hay không
-            var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync(pr => pr.ProductReviewID == reviewId && pr.UserId == _jwtServices.GetUserId());
+            var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync( pr => pr.ProductReviewID == reviewId && pr.UserId ==  _jwtServices.GetUserId());
             if (existingReview == null)
             {
                 return MessageStatus.Empty;
@@ -148,7 +148,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
         //user xoa review
         public async Task<MessageStatus> RemoveProductReview(int reviewId)
         {
-            var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync(pr => pr.ProductReviewID == reviewId && pr.UserId == _jwtServices.GetUserId());
+            var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync(pr => pr.ProductReviewID == reviewId && pr.UserId ==  _jwtServices.GetUserId());
             if (existingReview == null)
             {
                 return MessageStatus.Empty;

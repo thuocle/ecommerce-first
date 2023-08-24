@@ -1,14 +1,18 @@
-﻿namespace API_Test1.Services.JwtServices
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace API_Test1.Services.JwtServices
 {
     public class JwtServices : IJwtServices
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _dbContext;
 
-        public JwtServices(IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
+        public JwtServices(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, ApplicationDbContext dbContext)
         {
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
+            _dbContext = dbContext;
         }
 
         public bool IsUserLoggedIn()
@@ -40,21 +44,28 @@
             }
         }
 
-        public string GetUserId()
+        public  string GetUserId()
+        {
+            var userName = GetUsernameFromToken();
+            var user =  _dbContext.Users.FirstOrDefault(x => x.UserName == userName);
+            return user.Id;
+        }
+        public string GetUsernameFromToken()
         {
             var token = GetTokenFromCookie();
-            if (string.IsNullOrEmpty(token))
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+
+            if (jwtToken == null)
             {
+                // Token không hợp lệ, xử lý tùy theo yêu cầu của bạn
                 return null;
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-            var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var username = jwtToken.Claims.FirstOrDefault(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")?.Value;
 
-            return userId;
+            return username;
         }
-
         private string GetTokenFromCookie()
         {
             var httpContext = _httpContextAccessor.HttpContext;

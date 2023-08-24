@@ -1,8 +1,4 @@
-﻿using API_Test1.Models.DTOs;
-using API_Test1.Services.OrderServices;
-using API_Test1.Services.OrderstatusServices;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using API_Test1.Services.OrderstatusServices;
 
 namespace API_Test1.Controllers
 {
@@ -26,7 +22,7 @@ namespace API_Test1.Controllers
 
         // API: Tạo trạng thái đơn hàng mới
         [HttpPost]
-        public async Task<IActionResult> CreateOrderStatus([FromBody] OrderStatuses orderStatus)
+        public async Task<IActionResult> CreateOrderStatus([FromForm] OrderStatusForm orderStatus)
         {
             var messageStatus = await _orderstatus.CreateOrderStatus(orderStatus);
 
@@ -42,7 +38,7 @@ namespace API_Test1.Controllers
 
         // API: Cập nhật trạng thái đơn hàng
         [HttpPut("{orderStatusId}")]
-        public async Task<IActionResult> UpdateOrderStatus(int orderStatusId, [FromBody] OrderStatuses updatedOrderStatus)
+        public async Task<IActionResult> UpdateOrderStatus(int orderStatusId, [FromForm] OrderStatusForm updatedOrderStatus)
         {
             var messageStatus = await _orderstatus.UpdateOrderStatus(orderStatusId, updatedOrderStatus);
 

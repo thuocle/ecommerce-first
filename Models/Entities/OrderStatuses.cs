@@ -8,7 +8,7 @@ namespace API_Test1.Models.Entities
         [Key]
         public int OrderStatusID { get; set; }
         public string? StatusName { get; set; }
-        [BindNever]
+        [JsonIgnore]
         public IEnumerable<Orders>? Orders { get; set; }
     }
 }

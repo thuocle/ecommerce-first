@@ -30,6 +30,7 @@ using API_Test1.Services.OrderstatusServices;
 using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
 using API_Test1.Services.PaymentServices;
+using API_Test1.Services.ProductServices.ProductImageServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,7 @@ builder.Services.AddScoped<IJwtServices, JwtServices>();
 builder.Services.AddScoped<IMoMoServices, MoMoServices>();
 builder.Services.AddScoped<IPaymentServices, PaymentServices>();
 builder.Services.AddScoped<IOrderstatusServices, OrderstatusServices>();
+builder.Services.AddScoped<IProductImageServices, ProductImageServices>();
 
 //http
 builder.Services.AddHttpContextAccessor();
@@ -68,6 +70,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.HttpOnly = HttpOnlyPolicy.Always;
     options.Secure = CookieSecurePolicy.Always;
 });
+builder.Services.Configure<MoMoConfig>(
+    builder.Configuration.GetSection(MoMoConfig.ConfigName));
 ///identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
@@ -112,7 +116,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCors(builder => builder.WithOrigins("http://localhost:5070").AllowAnyHeader().AllowAnyMethod());
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();

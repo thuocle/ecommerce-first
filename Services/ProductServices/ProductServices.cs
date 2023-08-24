@@ -29,6 +29,7 @@ namespace API_Test1.Services.ProductServices
                 Discount = productModel.Discount,
                 Quantity = productModel.Quantity,
                 Status = Status.Active,
+                NumberOfViews = 1,
                 CreatedAt = DateTime.Now
             };
             if (productModel.AvtarProduct != null)
@@ -153,6 +154,7 @@ namespace API_Test1.Services.ProductServices
             {
                 return null;
             }
+            var crProduct = await _dbContext.Products.FirstOrDefaultAsync(x => x.ProductID == productId);
             var product = await _dbContext.Products
                 .Where(x => x.ProductID == productId)
                 .Select(x => new Products
@@ -166,13 +168,13 @@ namespace API_Test1.Services.ProductServices
                     Discount = x.Discount,
                     Quantity = x.Quantity,
                     Status = x.Status,
-                    NumberOfViews = x.NumberOfViews
+                    NumberOfViews = x.NumberOfViews +1
                 })
                 .FirstOrDefaultAsync();
 
-            if (product != null && product.Status == Status.Active)
+            if (crProduct != null)
             {
-                product.NumberOfViews += 1;
+                crProduct.NumberOfViews += 1;
                 await _dbContext.SaveChangesAsync();
             }
 

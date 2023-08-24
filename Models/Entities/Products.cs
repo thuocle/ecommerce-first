@@ -13,7 +13,7 @@ namespace API_Test1.Models.Entities
         [ForeignKey("ProductTypes")]
         public int ProductTypeID { get; set; }
 
-        [BindNever]
+        [JsonIgnore]
         public ProductTypes? ProductTypes { get; set; }
 
         public string? NameProduct { get; set; }
@@ -27,13 +27,13 @@ namespace API_Test1.Models.Entities
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         //1-n
-        [BindNever]
+        [JsonIgnore]
         public IEnumerable<ProductReviews>? ProductReviews { get; set; }
 
-        [BindNever]
+        [JsonIgnore]
         public IEnumerable<ProductImages>? ProductImages { get; set; }
 
-        [BindNever]
+        [JsonIgnore]
         public IEnumerable<OrderDetails>? OrderDetails { get; set; }
     }
 }

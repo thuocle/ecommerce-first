@@ -1,6 +1,6 @@
 ﻿namespace API_Test1.Models.ViewModels
 {
-    public class ResetPasswordModel
+    public class ResetPasswordForm
     {
         [Required]
         public string Token { get; set; } = string.Empty;

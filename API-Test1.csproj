@@ -37,7 +37,6 @@
 
   <ItemGroup>
     <Folder Include="Services\PaymentServices\VNPay\" />
-    <Folder Include="Services\ProductServices\ProductImageServices\" />
   </ItemGroup>
 
 </Project>

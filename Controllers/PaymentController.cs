@@ -20,7 +20,7 @@ namespace API_Test1.Controllers
         }
         // API: Tạo phương thức thanh toán mới
         [HttpPost]
-        public async Task<IActionResult> CreatePaymentMethod([FromBody] Payments paymentMethod)
+        public async Task<IActionResult> CreatePaymentMethod([FromForm] Payments paymentMethod)
         {
             var messageStatus = await _paymentServices.CreatePaymentMethod(paymentMethod);
 
@@ -36,7 +36,7 @@ namespace API_Test1.Controllers
 
         // API: Cập nhật phương thức thanh toán
         [HttpPut("{paymentMethodId}")]
-        public async Task<IActionResult> UpdatePaymentMethod(int paymentMethodId, [FromBody] Payments updatedPaymentMethod)
+        public async Task<IActionResult> UpdatePaymentMethod(int paymentMethodId, [FromForm] Payments updatedPaymentMethod)
         {
             var messageStatus = await _paymentServices.UpdatePaymentMethod(paymentMethodId, updatedPaymentMethod);
 

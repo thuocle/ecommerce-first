@@ -25,9 +25,10 @@
         }
 
         // Hàm chức năng: Tạo trạng thái đơn hàng mới
-        public async Task<MessageStatus> CreateOrderStatus(OrderStatuses orderStatus)
+        public async Task<MessageStatus> CreateOrderStatus(OrderStatusForm orderStatus)
         {
-            _dbContext.OrderStatuses.Add(orderStatus);
+            var newOrSts = new OrderStatuses { StatusName= orderStatus.StatusName};
+            _dbContext.OrderStatuses.Add(newOrSts);
             await _dbContext.SaveChangesAsync();
             return MessageStatus.Success;
         }
@@ -35,7 +36,7 @@
         
 
         // Hàm chức năng: Cập nhật trạng thái đơn hàng
-        public async Task<MessageStatus> UpdateOrderStatus(int orderStatusId, OrderStatuses updatedOrderStatus)
+        public async Task<MessageStatus> UpdateOrderStatus(int orderStatusId, OrderStatusForm updatedOrderStatus)
         {
             var orderStatus = await _dbContext.OrderStatuses.FirstOrDefaultAsync(os => os.OrderStatusID == orderStatusId);
 

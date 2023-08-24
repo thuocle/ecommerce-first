@@ -97,6 +97,7 @@ namespace API_Test1.Controllers
                 var result = await _productService.FindProductByNameForAdminAsync(page, keyWord);
                 return Ok(result);
             }
+
             [HttpGet("{productId}")]
             public async Task<IActionResult> GetProductByIdAsync(int productId)
             {
@@ -151,7 +152,7 @@ namespace API_Test1.Controllers
             }
 
             [HttpPost("filter")]
-            public async Task<IActionResult> FilterProductAsync([FromQuery] Pagination page, [FromBody] FilterProductForm filter)
+            public async Task<IActionResult> FilterProductAsync([FromQuery] Pagination page, [FromForm] FilterProductForm filter)
             {
                 var result = await _productService.FilterProductAsync(page, filter);
                 return Ok(result);

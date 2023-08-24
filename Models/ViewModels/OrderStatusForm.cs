@@ -2,5 +2,7 @@
 {
     public class OrderStatusForm
     {
+        [Required]
+        public string? StatusName { get; set; }
     }
 }

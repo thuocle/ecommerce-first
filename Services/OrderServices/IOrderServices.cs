@@ -9,13 +9,13 @@
 
         #endregion
         #region user
-        public Task<PageInfo<Orders>> GetAllOrderForUser(Pagination page, string userID);
+        public Task<PageInfo<dynamic>> GetAllOrderForUser(Pagination page, string userID);
         #endregion
         #region anonymous
         public Task<MessageStatus> CreateOrder(OrderInfo orderInfo);
         public Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId);
-        public Task<IEnumerable<OrderDetails>> GetOrderDetail(string orderID);
-        public Task<IEnumerable<OrderDetails>> FindOrderById(string orderID);
+        public Task<IEnumerable<dynamic>> GetOrderDetail(string orderID);
+        public Task<IEnumerable<dynamic>> FindOrderById(string orderID);
 
         #endregion
 

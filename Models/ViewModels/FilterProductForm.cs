@@ -1,6 +1,6 @@
 ﻿namespace API_Test1.Models.ViewModels
 {
-    public class FilterProduct
+    public class FilterProductForm
     {
         public int? minPrice { get; set; }
         public int? maxPrice { get; set; }

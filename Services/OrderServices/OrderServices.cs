@@ -1,7 +1,7 @@
-﻿using API_Test1.Models.ViewModels;
-using API_Test1.Services.CartServices;
+﻿using API_Test1.Services.CartServices;
 using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
+using Microsoft.CodeAnalysis;
 
 namespace API_Test1.Services.OrderServices
 {
@@ -49,7 +49,7 @@ namespace API_Test1.Services.OrderServices
             foreach (var cartItem in cartItems)
             {
                 int? discountPercentage = cartItem.DiscountPercentage;
-                double? discountAmount = cartItem.Price * (discountPercentage/100);
+                double? discountAmount = cartItem.Price * (discountPercentage / 100.0);
                 actualPrice -= discountAmount * cartItem.Quantity;
             }
 
@@ -57,13 +57,29 @@ namespace API_Test1.Services.OrderServices
         }
         #endregion
 
-
-
         #region for admin
         //xem danh sách đơn hàng
         public async Task<PageInfo<Orders>> GetAllOrder(Pagination page)
         {
-            var query = _dbContext.Orders.AsQueryable();
+            var query = _dbContext.Orders
+                .Select(x => new Orders
+                {
+                    OrderID = x.OrderID,
+                    PaymentID = x.PaymentID,
+                    UserId = x.UserId,
+                    OriginalPrice = x.OriginalPrice,
+                    ActualPrice = x.ActualPrice,
+                    FullName = x.FullName,
+                    Email = x.Email,
+                    Phone = x.Phone,
+                    Address = x.Address,
+                    OrderStatusID = x.OrderStatusID,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt
+
+
+                })
+                .AsQueryable();
             var data = PageInfo<Orders>.ToPageInfo(page, query);
             page.TotalItem = await query.CountAsync();
             return new PageInfo<Orders>(page, data);
@@ -73,6 +89,16 @@ namespace API_Test1.Services.OrderServices
         {
             var query = _dbContext.OrderDetails
                         .OrderByDescending(x => x.UpdatedAt)
+                        .Select(x => new OrderDetails
+                        {
+                            OrderDetailID = x.OrderDetailID,
+                            OrderID = x.OrderID,
+                            ProductID = x.ProductID,
+                            PriceTotal = x.PriceTotal,
+                            Quantity = x.Quantity,
+                            CreatedAt = x.CreatedAt
+
+                        })
                         .AsQueryable();
             var data = PageInfo<OrderDetails>.ToPageInfo(page, query);
             page.TotalItem = await query.CountAsync();
@@ -94,18 +120,18 @@ namespace API_Test1.Services.OrderServices
                     if (currentStatus == OrderStatus.Placed)
                         order.OrderStatusID = statusId;
                     break;
-                    //đơn đang chuẩn bị -> đnag vận chuyển
+                //đơn đang chuẩn bị -> đnag vận chuyển
                 case OrderStatus.Shipping:
                     if (currentStatus == OrderStatus.Preparing)
                         order.OrderStatusID = statusId;
                     break;
-                    // có yêu cầu hủy đơn => có thể hủy hoặc từ chối
+                // có yêu cầu hủy đơn => có thể hủy hoặc từ chối
                 case OrderStatus.CancelRejected:
                 case OrderStatus.Cancelled:
                     if (currentStatus == OrderStatus.CancelRequest)
                         order.OrderStatusID = statusId;
                     break;
-                    //cos yc trả hàng => có thể trả hoặc từ chối
+                //cos yc trả hàng => có thể trả hoặc từ chối
                 case OrderStatus.ReturnRejected:
                 case OrderStatus.Returned:
                     if (currentStatus == OrderStatus.ReturnRequest)
@@ -120,8 +146,6 @@ namespace API_Test1.Services.OrderServices
             return MessageStatus.Success;
         }
         #endregion
-
-
 
         //Đặt hàng 
         public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
@@ -138,7 +162,7 @@ namespace API_Test1.Services.OrderServices
             var actualPrice = CalculateActualPrice(originalPrice, cartItems);
 
             // Lưu thông tin hóa đơn vào 1 đối tượng
-            newOrder.OrderID =Guid.NewGuid().ToString();
+            newOrder.OrderID = Guid.NewGuid().ToString();
             newOrder.FullName = orderInfo.FullName;
             newOrder.Email = orderInfo.Email;
             newOrder.Phone = orderInfo.Phone;
@@ -148,22 +172,21 @@ namespace API_Test1.Services.OrderServices
             newOrder.PaymentID = orderInfo.PaymentID;
             newOrder.OrderStatusID = 1;
             newOrder.CreatedAt = DateTime.Now;
-            
+
             // Xử lý các mục giỏ hàng, ví dụ: lưu các mục giỏ hàng vào bảng OrderItems
             //xử lý thanh toán
-            if(orderInfo.PaymentID == 1)
+            /*if (orderInfo.PaymentID == 5)
             {
                 var payMoMo = await _moMoServices.CreatePaymentAsync(newOrder);
-                if(payMoMo == null)
+                if (payMoMo == null)
                 {
                     return MessageStatus.Failed;
                 }
-            }
-            //gửi mail xác nhận
-            _mailServices.SendMail(new MailDTOs()
-            {
-                To = orderInfo.Email,
-                Body = $@"
+                //gửi mail xác nhận
+                _mailServices.SendMail(new MailDTOs()
+                {
+                    To = orderInfo.Email,
+                    Body = $@"
 <!DOCTYPE html>
 <html>
 <head>
@@ -233,47 +256,59 @@ namespace API_Test1.Services.OrderServices
     <img src=""https://www.wordstream.com/wp-content/uploads/2022/07/full-size-thank-you-for-your-order-images-13.png"" alt=""Cảm ơn bạn đã đặt hàng"" >
 </body>
 </html>",
-                Subject = "Đặt hàng thành công!"
-            });
-            //lưu đon hàng v
-            _dbContext.Orders.Add(newOrder);
-            await _dbContext.SaveChangesAsync();
+                    Subject = "Đặt hàng thành công!"
+                });
+                //lưu đon hàng v
+                _dbContext.Orders.Add(newOrder);
+                await _dbContext.SaveChangesAsync();
 
-            // Lưu thông tin chi tiết đơn hàng vào bảng "OrderItems"
-            foreach (var cartItem in cartItems)
-            {
-                var orderItem = new OrderDetails
+                // Lưu thông tin chi tiết đơn hàng vào bảng "OrderItems"
+                foreach (var cartItem in cartItems)
                 {
-                    OrderID = newOrder.OrderID,
-                    ProductID = cartItem.ProductId,
-                    Quantity = cartItem.Quantity,
-                    PriceTotal = cartItem.Price,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
+                    var orderItem = new OrderDetails
+                    {
+                        OrderID = newOrder.OrderID,
+                        ProductID = cartItem.ProductId,
+                        Quantity = cartItem.Quantity,
+                        PriceTotal = cartItem.Price,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    };
 
-                _dbContext.OrderDetails.Add(orderItem);
+                    _dbContext.OrderDetails.Add(orderItem);
 
-                // Cập nhật số lượng còn lại của sản phẩm sau khi mua thành công
-                var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
-                if (product != null)
-                {
-                    product.Quantity -= cartItem.Quantity;
+                    // Cập nhật số lượng còn lại của sản phẩm sau khi mua thành công
+                    var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
+                    if (product != null)
+                    {
+                        product.Quantity -= cartItem.Quantity;
+                    }
                 }
-            }
-            await _dbContext.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync();
 
-            // Xóa cookie giỏ hàng
-            _httpContextAccessor.HttpContext.Response.Cookies.Delete(CART_COOKIE_NAME);
+                // Xóa cookie giỏ hàng
+                _httpContextAccessor.HttpContext.Response.Cookies.Delete(CART_COOKIE_NAME);
+            }*/
 
             return MessageStatus.Success;
         }
 
-       //xem chi tiết hóa đơn
-        public async Task<IEnumerable<OrderDetails>> GetOrderDetail(string orderID)
+        //xem chi tiết hóa đơn
+        public async Task<IEnumerable<dynamic>> GetOrderDetail(string orderID)
         {
-            var query = await Task.FromResult(_dbContext.OrderDetails.Where(x => x.OrderID == orderID).AsQueryable());
-            return query;
+            var orderDetails = from orderDetail in _dbContext.OrderDetails
+                               join product in _dbContext.Products on orderDetail.ProductID equals product.ProductID
+                               where orderDetail.OrderID == orderID
+                               select new
+                               {
+                                   orderDetail.CreatedAt,
+                                   orderDetail.PriceTotal,
+                                   orderDetail.Quantity,
+                                   product.AvatarImageProduct,
+                                   product.NameProduct,
+
+                               };
+            return orderDetails;
         }
         // cập nhật trạng thái đơn hàng for user
         public async Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId)
@@ -301,12 +336,12 @@ namespace API_Test1.Services.OrderServices
                     if (currentStatus == OrderStatus.Completed)
                         order.OrderStatusID = statusId;
                     break;
-                    // khi đơn đã yêu cầu hủy, hoặc bị bên bán từ chôis => có thể chọn tiếp tục giao = đơn đang chuẩn bị
+                // khi đơn đã yêu cầu hủy, hoặc bị bên bán từ chôis => có thể chọn tiếp tục giao = đơn đang chuẩn bị
                 case OrderStatus.ResumingDelivery:
                     if (currentStatus == OrderStatus.CancelRequest || currentStatus == OrderStatus.CancelRejected)
                         order.OrderStatusID = (int)OrderStatus.Preparing;
-                    break; 
-                    //đơn đang là yêu cầu trả hàng, hoặc bị bên bán từ chối hủy, có thể hủy trả => đơn hoàn thành 
+                    break;
+                //đơn đang là yêu cầu trả hàng, hoặc bị bên bán từ chối hủy, có thể hủy trả => đơn hoàn thành 
                 case OrderStatus.ReturnCancelled:
                     if (currentStatus == OrderStatus.ReturnRequest || currentStatus == OrderStatus.ReturnRejected)
                         order.OrderStatusID = (int)OrderStatus.Completed;
@@ -320,23 +355,39 @@ namespace API_Test1.Services.OrderServices
             return MessageStatus.Success;
         }
         //lấy ra tất cả đơn hàng của 1 user
-        public async Task<PageInfo<Orders>> GetAllOrderForUser(Pagination page, string userID)
+        public async Task<PageInfo<dynamic>> GetAllOrderForUser(Pagination page, string userID)
         {
-            var query = _dbContext.Orders
-                .Where(o => o.UserId == userID)
-                .OrderByDescending(x=>x.UpdatedAt)
-                .AsQueryable();
-            var data = PageInfo<Orders>.ToPageInfo(page, query);
+            var query = from order in _dbContext.Orders
+                        join pay in _dbContext.Payments on order.PaymentID equals pay.PaymentID
+                        join orderstt in _dbContext.OrderStatuses on order.OrderStatusID equals orderstt.OrderStatusID
+                        where order.UserId == userID
+                        select new 
+                        { 
+                            order.OrderID,
+                            order.ActualPrice,
+                            order.CreatedAt,
+                            pay.PaymentMethod,
+                            orderstt.StatusName
+                        };
+            var data = PageInfo<dynamic>.ToPageInfo(page, query);
             page.TotalItem = await query.CountAsync();
-            return new PageInfo<Orders>(page, data);
+            return new PageInfo<dynamic>(page, data);
         }
         //tim hóa đơn theo id
-        public async Task<IEnumerable<OrderDetails>> FindOrderById(string orderID)
+        public async Task<IEnumerable<dynamic>> FindOrderById(string orderID)
         {
-
-            var orderDetails = await _dbContext.OrderDetails
-                .Where(od => od.OrderID == orderID)
-                .ToListAsync();
+               var orderDetails = from order in _dbContext.Orders
+                           join pay in _dbContext.Payments on order.PaymentID equals pay.PaymentID
+                           join orderstt in _dbContext.OrderStatuses on order.OrderStatusID equals orderstt.OrderStatusID
+                           where order.OrderID == orderID
+                                  select new
+                           {
+                               order.OrderID,
+                               order.ActualPrice,
+                               order.CreatedAt,
+                               pay.PaymentMethod,
+                               orderstt.StatusName
+                           };
             return orderDetails;
         }
     }

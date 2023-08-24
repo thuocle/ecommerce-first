@@ -127,7 +127,7 @@ namespace API_Test1.Services.CartServices
             foreach (var cartItem in cartItems)
             {
                 int? discountPercentage = cartItem.DiscountPercentage;
-                double? discountAmount = cartItem.Price * (discountPercentage / 100);
+                double? discountAmount = cartItem.Price * (discountPercentage / 100.0);
                 totalPrice -= discountAmount * cartItem.Quantity;
             }
             return totalPrice;

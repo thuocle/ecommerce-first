@@ -40,6 +40,8 @@ namespace API_Test1.Controllers
                 return BadRequest("Failed to update order status.");
             }
         }
+
+
         //other 
         [HttpPost("update-status")]
         public async Task<IActionResult> UpdateStatusOrderByUser(int statusId, string orderId)
@@ -56,7 +58,7 @@ namespace API_Test1.Controllers
             }
         }
         [HttpPost("create-order")]
-        public async Task<IActionResult> CreateOrder([FromBody] OrderInfo orderInfo)
+        public async Task<IActionResult> CreateOrder([FromForm] OrderInfo orderInfo)
         {
             var messageStatus = await _orderService.CreateOrder(orderInfo);
 

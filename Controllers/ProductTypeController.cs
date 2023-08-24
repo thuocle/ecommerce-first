@@ -12,14 +12,14 @@ namespace API_Test1.Controllers
             _productTypeServices = productTypeServices;
         }
         [HttpPost]
-        public async Task<IActionResult> AddProductTypeAsync([FromBody] ProductTypes productType)
+        public async Task<IActionResult> AddProductTypeAsync([FromForm] ProductTypeForm productType)
         {
             var result = await _productTypeServices.AddProductTypeAsync(productType);
             return Ok(result);
         }
 
         [HttpPut("{productTypeId}")]
-        public async Task<IActionResult> UpdateProductTypeAsync(int productTypeId, [FromBody] ProductTypes productType)
+        public async Task<IActionResult> UpdateProductTypeAsync(int productTypeId, [FromForm] ProductTypeForm productType)
         {
             var result = await _productTypeServices.UpdateProductTypeAsync(productTypeId, productType);
             return Ok(result);

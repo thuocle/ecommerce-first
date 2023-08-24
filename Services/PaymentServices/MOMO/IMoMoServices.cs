@@ -2,6 +2,6 @@
 {
     public interface IMoMoServices
     {
-        public Task<dynamic> CreatePaymentAsync(Orders model);
+        public Task<dynamic> CreatePaymentAsync(OrderForm model);
     }
 }

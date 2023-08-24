@@ -3,7 +3,6 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System.Net.Http;
 
-
 namespace API_Test1.Services.PaymentServices.MOMO
 {
     public class MoMoServices : IMoMoServices
@@ -16,6 +15,12 @@ namespace API_Test1.Services.PaymentServices.MOMO
             _configuration = configuration;
             _httpClient = httpClient;
         }
+
+        public Task<dynamic> CreatePaymentAsync(OrderForm model)
+        {
+            throw new NotImplementedException();
+        }
+
         private string ComputeHmacSha256(string message, string secretKey)
         {
             var keyBytes = Encoding.UTF8.GetBytes(secretKey);
@@ -33,7 +38,7 @@ namespace API_Test1.Services.PaymentServices.MOMO
             return hashString;
         }
 
-        public async Task<dynamic> CreatePaymentAsync(Orders model)
+        /*public async Task CreatePaymentAsync(OrderForm model)
         {
             var OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: Thanh toan don hang tai E-commerce";
             var rawData =
@@ -66,6 +71,6 @@ namespace API_Test1.Services.PaymentServices.MOMO
             var responseObject = JsonConvert.DeserializeObject<dynamic>(responseContent);
             // Trích xuất payURL từ đối tượng phản hồi
             return responseObject;
-        }
+        }*/
     }
 }
