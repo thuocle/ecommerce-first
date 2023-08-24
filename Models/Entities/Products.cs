@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
 
@@ -12,7 +13,7 @@ namespace API_Test1.Models.Entities
         [ForeignKey("ProductTypes")]
         public int ProductTypeID { get; set; }
 
-        [IgnoreDataMember]
+        [BindNever]
         public ProductTypes? ProductTypes { get; set; }
 
         public string? NameProduct { get; set; }
@@ -21,18 +22,18 @@ namespace API_Test1.Models.Entities
         public string? Title { get; set; }
         public int? Discount { get; set; }
         public int? Quantity { get; set; }
-        public string? Status { get; set; }
+        public int? Status { get; set; }
         public int? NumberOfViews { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         //1-n
-        [IgnoreDataMember]
+        [BindNever]
         public IEnumerable<ProductReviews>? ProductReviews { get; set; }
 
-        [IgnoreDataMember]
+        [BindNever]
         public IEnumerable<ProductImages>? ProductImages { get; set; }
 
-        [IgnoreDataMember]
+        [BindNever]
         public IEnumerable<OrderDetails>? OrderDetails { get; set; }
     }
 }

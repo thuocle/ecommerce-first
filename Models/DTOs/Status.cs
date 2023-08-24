@@ -2,8 +2,8 @@
 {
     public static class Status
     {
-        public const string Active = "Active";
-        public const string Pending = "Pending";
-        public const string Disabled = "Disabled";
+        public const int Active  = 1;
+        public const int Pending = 2;
+        public const int Disabled = 3;
     }
 }

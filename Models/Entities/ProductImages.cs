@@ -14,7 +14,7 @@ namespace API_Test1.Models.Entities
         public int ProductID { get; set; }
         [JsonIgnore]
         public Products? Products { get; set; }
-        public string? Status { get; set; }
+        public int? Status { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
     }

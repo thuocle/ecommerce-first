@@ -1,4 +1,5 @@
-﻿using API_Test1.Services.FileServices;
+﻿using API_Test1.Models.ViewModels;
+using API_Test1.Services.FileServices;
 namespace API_Test1.Services.AccountServices
 {
     public class AccountServices : IAccountServices
@@ -65,7 +66,7 @@ namespace API_Test1.Services.AccountServices
         #region For User
 
         //register user
-        public async Task<MessageStatus> RegisterAsync(RegisterModel registerModel)
+        public async Task<MessageStatus> RegisterAsync(RegisterForm registerModel)
         {
             // validate
             var userNameExist = await _userManager.FindByNameAsync(registerModel.UserName);
@@ -188,7 +189,7 @@ namespace API_Test1.Services.AccountServices
             return MessageStatus.Success;
         }
         //Login user
-        public async Task<string> LoginAsync(LoginModel loginModel)
+        public async Task<string> LoginAsync(LoginForm loginModel)
         {
             if (_userManager == null)
                 return MessageStatus.Empty.ToString();
@@ -216,11 +217,79 @@ namespace API_Test1.Services.AccountServices
                 return MessageStatus.AccountNotFound;
             account.ResetPasswordToken = CreateRandomToken();
             account.ResetPasswordTokenExpiry = DateTime.Now.AddMinutes(15);
+            //send mail confirm
+            _mailServices.SendMail(new MailDTOs()
+            {
+                To = email,
+                Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333333;
+        }}
+        
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+
+        .header {{
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+        }}
+
+        .content {{
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+        }}
+
+        .token {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #ff0000;
+        }}
+
+        .footer {{
+            padding: 10px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>Xác nhận reset mật khẩu</h2>
+        </div>
+        
+        <div class='content'>
+            <p>
+                Đây là mã xác nhận: <span class='token'>{account.ResetPasswordToken}</span>.
+                Hãy kích hoạt trong thời gian còn hiệu lực.
+                Thời gian hiệu lực kết thúc là {account.ResetPasswordTokenExpiry} kể từ khi nhận được thông báo này!
+            </p>
+        </div>
+        
+        <div class='footer'>
+            <p>Trân trọng,</p>
+        </div>
+    </div>
+</body>
+</html>",
+                Subject = "Reset mật khẩu!"
+            });
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
         // reset
-        public async Task<MessageStatus> ResetPasswordAsync(ResetPasswordModel request)
+        public async Task<MessageStatus> ResetPasswordAsync(ResetPasswordForm request)
         {
             // kiem tra token và hieu luc
             var account = _userManager.Users.FirstOrDefault(x => x.ResetPasswordToken == request.Token);
@@ -233,18 +302,17 @@ namespace API_Test1.Services.AccountServices
             account.PasswordHash = passwordHash;
             account.ResetPasswordToken = string.Empty;
             account.ResetPasswordTokenExpiry = null;
+            account.UpdateAt = DateTime.Now;
             await _userManager.UpdateAsync(account);
             return MessageStatus.Success;
         }
         //update profile for user
-        public async Task<MessageStatus> UpdateUserProfileAsync(string accountID, UserProfileModel request)
+        public async Task<MessageStatus> UpdateUserProfileAsync(string accountID, UserProfileForm request)
         {
             var acc = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == accountID);
             if (acc == null)
                 return MessageStatus.AccountNotFound;
             acc.FullName = request.FullName;
-            acc.UserName = request.UserName;
-            acc.Email = request.Email;
             acc.PhoneNumber = request.Phone;
             acc.Address = request.Address;
             acc.UpdateAt = DateTime.Now;
@@ -281,7 +349,7 @@ namespace API_Test1.Services.AccountServices
 
         #region for admin
         //dùng cho lần đầu nhằm tạo các quyền và admin đầu tiên
-        public async Task<MessageStatus> RegisterAdminAsync(RegisterModel registerModel)
+        public async Task<MessageStatus> RegisterAdminAsync(RegisterForm registerModel)
         {
             var user = new ApplicationUser
             {
@@ -316,7 +384,7 @@ namespace API_Test1.Services.AccountServices
             }
         }
 
-        public async Task<string> LoginAdminAsync(LoginModel loginModel)
+        public async Task<string> LoginAdminAsync(LoginForm loginModel)
         {
             if (_userManager == null)
                 return MessageStatus.Empty.ToString();
@@ -345,7 +413,7 @@ namespace API_Test1.Services.AccountServices
             }
         }
 
-        public async Task<MessageStatus> AddAccountAsync(AccountManage account)
+        public async Task<MessageStatus> AddAccountAsync(AccountForm account)
         {
             var existingEmail = await _userManager.FindByEmailAsync(account.Email);
             var existingUsername = await _userManager.FindByNameAsync(account.UserName);
@@ -383,7 +451,7 @@ namespace API_Test1.Services.AccountServices
 
             return MessageStatus.Failed;
         }
-        public async Task<MessageStatus> UpdateUserAccountAsync(string userId, AccountManage accountModel)
+        public async Task<MessageStatus> UpdateUserAccountAsync(string userId, AccountForm accountModel)
         {
             var account = await _userManager.FindByIdAsync(userId);
 
@@ -421,7 +489,7 @@ namespace API_Test1.Services.AccountServices
                     return MessageStatus.Failed;
                 }
             }
-
+            //xóa role hiện tại, thay role mới
             if (!string.IsNullOrEmpty(accountModel.UserRoles) && await _roleManager.RoleExistsAsync(accountModel.UserRoles))
             {
                 var currentRoles = await _userManager.GetRolesAsync(account);
@@ -452,7 +520,11 @@ namespace API_Test1.Services.AccountServices
         {
             var allqr = _userManager.Users
                 .Join(_dbContext.UserRoles, user => user.Id, roleuser => roleuser.UserId, (user, roleuser) => new { User = user, RoleUserId = roleuser.RoleId })
-                .Join(_dbContext.Roles, temp => temp.RoleUserId, role => role.Id, (temp, role) => new AccountInfo { User = temp.User, RoleName = role.Name });
+                .Join(_dbContext.Roles, temp => temp.RoleUserId, role => role.Id, (temp, role) => new AccountInfo 
+                { 
+                    User = temp.User, 
+                    RoleName = role.Name 
+                });
 
             var alluser = allqr.AsQueryable();
             var data = PageInfo<AccountInfo>.ToPageInfo(page, alluser);

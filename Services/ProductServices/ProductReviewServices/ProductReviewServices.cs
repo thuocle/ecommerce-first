@@ -45,17 +45,21 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
                           orderby pr.CreatedAt descending
                           select new
                           {
-                              pr,
+                              pr.ProductReviewID,
+                              pr.ProductID,
+                              pr.ContentRated,
+                              pr.ContentSeen,
+                              pr.PointEvaluation,
+                              pr.UpdatedAt,
                               u.UserName
                           };
-
             reviews = reviews.AsQueryable();
             var data = PageInfo<dynamic>.ToPageInfo(page, reviews);
             page.TotalItem = await reviews.CountAsync();
             return new PageInfo<dynamic>(page, data);
         }
         //cap nhat satutus của review
-        public async Task<MessageStatus> UpdateProductReviewStatus(int reviewId, string status)
+        public async Task<MessageStatus> UpdateProductReviewStatus(int reviewId, int status)
         {
             var review = await _dbContext.ProductReviews.FirstOrDefaultAsync(x => x.ProductReviewID == reviewId);
             if (review == null)
@@ -72,7 +76,7 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
         /// </summary>
         /// <param name="tat ca"></param>
         /// <returns></returns>
-        public async Task<MessageStatus> AddProductReview(int productId, ReviewProductModel reviewProduct)
+        public async Task<MessageStatus> AddProductReview(int productId, ReviewProductForm reviewProduct)
         {
             //xác nhan da login chua
             if (!_jwtServices.IsUserLoggedIn())
@@ -104,14 +108,14 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
             return MessageStatus.Success;
         }
         //hien thi cac danh gia Trang chi tiết sản phẩm
-        public async Task<PageInfo<ProductReviewDTO>> GetProductReviewsWithContent(int productId, Pagination page)
+        public async Task<PageInfo<ProductReviewForm>> GetProductReviewsWithContent(int productId, Pagination page)
         {
             var reviews =
                             from pr in _dbContext.ProductReviews
                             join u in _dbContext.Users on pr.UserId equals u.Id
                             where pr.ProductID == productId && pr.Status == Status.Active
                             orderby pr.CreatedAt descending
-                            select new ProductReviewDTO
+                            select new ProductReviewForm
                             {
                                 UserName = u.UserName,
                                 ContentRated = pr.ContentRated,
@@ -119,12 +123,12 @@ namespace API_Test1.Services.ProductServices.ProductReviewServices
                                 CreatedAt = pr.CreatedAt
                             };
             reviews = reviews.AsQueryable();
-            var data = PageInfo<ProductReviewDTO>.ToPageInfo(page, reviews);
+            var data = PageInfo<ProductReviewForm>.ToPageInfo(page, reviews);
             page.TotalItem = await reviews.CountAsync();
-            return new PageInfo<ProductReviewDTO>(page, data);
+            return new PageInfo<ProductReviewForm>(page, data);
         }
         //user cập nhật review
-        public async Task<MessageStatus> UpdateProductReview(int reviewId, ReviewProductModel reviewProduct)
+        public async Task<MessageStatus> UpdateProductReview(int reviewId, ReviewProductForm reviewProduct)
         {
             // Kiểm tra xem reviewId có tồn tại và thuộc về user hiện tại hay không
             var existingReview = await _dbContext.ProductReviews.FirstOrDefaultAsync(pr => pr.ProductReviewID == reviewId && pr.UserId == _jwtServices.GetUserId());

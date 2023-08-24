@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace API_Test1.Services.OrderstatusServices
+﻿namespace API_Test1.Services.OrderstatusServices
 {
     public class OrderstatusServices : IOrderstatusServices
     {
@@ -14,7 +12,13 @@ namespace API_Test1.Services.OrderstatusServices
         // Hàm chức năng: Lấy danh sách trạng thái đơn hàng
         public async Task<PageInfo<OrderStatuses>> GetOrderStatuses(Pagination page)
         {
-            var orderStatuses = await Task.FromResult(_dbContext.OrderStatuses.AsQueryable());
+            var orderStatuses = await Task.FromResult(_dbContext.OrderStatuses
+                .Select(x=>new OrderStatuses 
+                {
+                    OrderStatusID = x.OrderStatusID,
+                    StatusName = x.StatusName
+                })
+                .AsQueryable());
             var data = PageInfo<OrderStatuses>.ToPageInfo(page, orderStatuses);
             page.TotalItem = await orderStatuses.CountAsync();
             return new PageInfo<OrderStatuses>(page, data);

@@ -30,7 +30,7 @@ namespace API_Test1.Controllers
         }
 
         [HttpPost("{productId}")]
-        public async Task<IActionResult> AddProductReview(int productId, [FromBody] ReviewProductModel reviewProduct)
+        public async Task<IActionResult> AddProductReview(int productId, [FromBody] ReviewProductForm reviewProduct)
         {
             var result = await _productReviewServices.AddProductReview(productId, reviewProduct);
             if (result == MessageStatus.Success)
@@ -49,7 +49,7 @@ namespace API_Test1.Controllers
         }
 
         [HttpPut("{reviewId}")]
-        public async Task<IActionResult> UpdateProductReview(int reviewId, [FromBody] ReviewProductModel reviewProduct)
+        public async Task<IActionResult> UpdateProductReview(int reviewId, [FromBody] ReviewProductForm reviewProduct)
         {
             var result = await _productReviewServices.UpdateProductReview(reviewId, reviewProduct);
             if (result == MessageStatus.Success)

@@ -4,8 +4,8 @@
     {
         Task<PageInfo<ProductTypes>> GetAllProductTypesAsync(Pagination page);
         Task<ProductTypes> GetProductTypeByIdAsync(int productTypeId);
-        Task<MessageStatus> AddProductTypeAsync(ProductTypes productType);
-        Task<MessageStatus> UpdateProductTypeAsync(int productTypeId, ProductTypes productType);
+        Task<MessageStatus> AddProductTypeAsync(ProductTypeForm productType);
+        Task<MessageStatus> UpdateProductTypeAsync(int productTypeId, ProductTypeForm productType);
         Task<MessageStatus> DeleteProductTypeAsync(int productTypeId);
     }
 }

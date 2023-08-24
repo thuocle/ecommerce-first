@@ -1,6 +1,4 @@
-﻿using API_Test1.Models.DTOs;
-
-namespace API_Test1.Controllers
+﻿namespace API_Test1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

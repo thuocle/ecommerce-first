@@ -44,16 +44,17 @@ namespace API_Test1.Services.CartServices
             var cartItems = GetCartItems();
             var existingItem = cartItems.FirstOrDefault(item => item.ProductId == productId);
             var product = await Task.FromResult(_dbContext.Products.FirstOrDefaultAsync(x=> x.ProductID == productId)); 
-            if (existingItem != null)
+            if (existingItem != null && product != null)
             {
                 existingItem.Quantity++;
             }
-            else
+            if ((existingItem == null && product != null))
             {
                 cartItems.Add(new CartItem { ProductId = productId, Quantity = 1, 
                         Price = product.Result.Price, ProductName = product.Result.NameProduct, DiscountPercentage= product.Result.Discount });
             }
-
+            if (product == null)
+                return MessageStatus.Failed;
             UpdateCartItems(cartItems);
             return MessageStatus.Success;
         }

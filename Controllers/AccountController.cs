@@ -13,7 +13,7 @@
         #region for user
         [HttpPost]
         [Route("Register")]
-        public async Task<IActionResult> Register(RegisterModel registerModel)
+        public async Task<IActionResult> Register(RegisterForm registerModel)
         {
             var re = await _accountServices.RegisterAsync(registerModel);
             if (re != MessageStatus.Success)
@@ -31,7 +31,7 @@
         }
         [HttpPost]
         [Route("Login")]
-        public async Task<IActionResult> Login(LoginModel loginModel)
+        public async Task<IActionResult> Login(LoginForm loginModel)
         {
             var re = await _accountServices.LoginAsync(loginModel);
             if (re == null)
@@ -48,23 +48,23 @@
             return Ok(re);
         }
         [HttpPost("ResetPassword")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
+        public async Task<IActionResult> ResetPassword(ResetPasswordForm resetPasswordModel)
         {
             var re = await _accountServices.ResetPasswordAsync(resetPasswordModel);
             if (re != MessageStatus.Success)
                 return BadRequest("Ma xac nhan khong dung hoac da het han");
             return Ok(re);
         }
-        [Authorize(Roles = UserRoles.User)]
+       /* [Authorize(Roles = UserRoles.User)]*/
         [HttpPut("UpdateUserProfile")]
-        public async Task<IActionResult> UpdateUserProfile(string userID, [FromForm] UserProfileModel userProfileModel)
+        public async Task<IActionResult> UpdateUserProfile(string userID, [FromForm] UserProfileForm userProfileModel)
         {
             var re = await _accountServices.UpdateUserProfileAsync(userID, userProfileModel);
             if (re != MessageStatus.Success)
                 return BadRequest("Khong thanh cong");
             return Ok(re);
         }
-        [Authorize(Roles = UserRoles.User)]
+      /*  [Authorize(Roles = UserRoles.User)]*/
         [HttpGet("GetUserProfile/{userID}")]
         public async Task<IActionResult> GetUserProfile(string userID)
         {
@@ -83,7 +83,7 @@
         #region for Admin
         [HttpPost]
         [Route("registerAdmin")]
-        public async Task<IActionResult> RegisterAdmin(RegisterModel registerModel)
+        public async Task<IActionResult> RegisterAdmin(RegisterForm registerModel)
         {
             var re = await _accountServices.RegisterAdminAsync(registerModel);
             if (re != MessageStatus.Success)
@@ -92,7 +92,7 @@
             return Ok("Thành công");
         }
         [HttpPost("LoginAdmin")]
-        public async Task<IActionResult> LoginAdmin(LoginModel loginModel)
+        public async Task<IActionResult> LoginAdmin(LoginForm loginModel)
         {
             var result = await _accountServices.LoginAdminAsync(loginModel);
 
@@ -108,7 +108,7 @@
             return Ok(result);
         }
         [HttpPost("AddAccount")]
-        public async Task<IActionResult> AddAccount(AccountManage account)
+        public async Task<IActionResult> AddAccount(AccountForm account)
         {
             var result = await _accountServices.AddAccountAsync(account);
 
@@ -127,8 +127,8 @@
         }
 
 
-        [HttpPost("UpdateUserAccount/{userId}")]
-        public async Task<IActionResult> UpdateUserAccount(string userId, AccountManage accountModel)
+        [HttpPut("UpdateUserAccount/{userId}")]
+        public async Task<IActionResult> UpdateUserAccount(string userId, [FromForm] AccountForm accountModel)
         {
             var result = await _accountServices.UpdateUserAccountAsync(userId, accountModel);
 
@@ -185,6 +185,18 @@
             }
         }
         #endregion
-
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            try
+            {
+                var result = await _accountServices.LogoutAsync();
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

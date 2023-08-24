@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Newtonsoft.Json;
 
 namespace API_Test1.Models.Entities
 {
@@ -7,7 +8,7 @@ namespace API_Test1.Models.Entities
         [Key]
         public int OrderStatusID { get; set; }
         public string? StatusName { get; set; }
-        [JsonIgnore]
+        [BindNever]
         public IEnumerable<Orders>? Orders { get; set; }
     }
 }

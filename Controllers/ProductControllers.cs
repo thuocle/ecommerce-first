@@ -14,7 +14,7 @@ namespace API_Test1.Controllers
             }
 
             [HttpPost("AddProduct")]
-            public async Task<IActionResult> AddProduct([FromForm]ProductModel productModel)
+            public async Task<IActionResult> AddProduct([FromForm]ProductForm productModel)
             {
                 if (!ModelState.IsValid)
                 {
@@ -37,7 +37,7 @@ namespace API_Test1.Controllers
             }
 
             [HttpPut("UpdateProduct/{productId}")]
-            public async Task<IActionResult> UpdateProduct(int productId, ProductModel productModel)
+            public async Task<IActionResult> UpdateProduct(int productId,[FromForm] ProductForm productModel)
             {
                 if (!ModelState.IsValid)
                 {
@@ -151,7 +151,7 @@ namespace API_Test1.Controllers
             }
 
             [HttpPost("filter")]
-            public async Task<IActionResult> FilterProductAsync([FromQuery] Pagination page, [FromBody] FilterProduct filter)
+            public async Task<IActionResult> FilterProductAsync([FromQuery] Pagination page, [FromBody] FilterProductForm filter)
             {
                 var result = await _productService.FilterProductAsync(page, filter);
                 return Ok(result);
