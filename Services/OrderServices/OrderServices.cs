@@ -1,7 +1,9 @@
-﻿using API_Test1.Services.CartServices;
+﻿using API_Test1.Models.ViewModels;
+using API_Test1.Services.CartServices;
 using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
 using Microsoft.CodeAnalysis;
+using System.Net.Http;
 
 namespace API_Test1.Services.OrderServices
 {
@@ -14,9 +16,10 @@ namespace API_Test1.Services.OrderServices
         private readonly IMoMoServices _moMoServices;
         private readonly IJwtServices _jwtServices;
         private readonly IMailServices _mailServices;
+        private readonly HttpClient _httpClient;
         private const string CART_COOKIE_NAME = "CartItems";
         private const string USER_COOKIE_NAME = "User";
-        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices, IMailServices mailServices)
+        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices, IMailServices mailServices, HttpClient httpClient)
         {
             _httpContextAccessor = httpContextAccessor;
             _cartServices = cartServices;
@@ -25,6 +28,7 @@ namespace API_Test1.Services.OrderServices
             _moMoServices = moMoServices;
             _jwtServices = jwtServices;
             _mailServices = mailServices;
+            _httpClient = httpClient;
         }
 
         #region private
@@ -148,45 +152,93 @@ namespace API_Test1.Services.OrderServices
         #endregion
 
         //Đặt hàng 
+
+
         public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
         {
             var cartItems = _cartServices.GetCartItems();
-            var newOrder = new Orders();
-            // Kiểm tra xem user co login khi đặt hàng không: có -> lưu id, không-> mua không lưu id
+            var newOrder = BuildOrderFromOrderInfo(orderInfo);
+            //xác thực login
             if (_jwtServices.IsUserLoggedIn())
             {
                 newOrder.UserId = _jwtServices.GetUserId();
             }
-            // Xử lý thông tin giỏ hàng và tính toán thành hóa đơn
-            var originalPrice = CalculateOriginalPrice(cartItems);
-            var actualPrice = CalculateActualPrice(originalPrice, cartItems);
 
-            // Lưu thông tin hóa đơn vào 1 đối tượng
-            newOrder.OrderID = Guid.NewGuid().ToString();
-            newOrder.FullName = orderInfo.FullName;
-            newOrder.Email = orderInfo.Email;
-            newOrder.Phone = orderInfo.Phone;
-            newOrder.Address = orderInfo.Address;
+            var originalPrice = _cartServices.GetOriginalTotalPrice();
+            var actualPrice = _cartServices.GetTotalPrice();
+
             newOrder.OriginalPrice = originalPrice;
             newOrder.ActualPrice = actualPrice;
-            newOrder.PaymentID = orderInfo.PaymentID;
-            newOrder.OrderStatusID = 1;
-            newOrder.CreatedAt = DateTime.Now;
 
-            // Xử lý các mục giỏ hàng, ví dụ: lưu các mục giỏ hàng vào bảng OrderItems
-            //xử lý thanh toán
-            /*if (orderInfo.PaymentID == 5)
+            if (orderInfo.PaymentID == 5)
             {
-                var payMoMo = await _moMoServices.CreatePaymentAsync(newOrder);
-                if (payMoMo == null)
+                var momoPaymentUrl = _moMoServices.CreatePaymentAsync(new OrderForm { Amount = actualPrice, FullName = newOrder.FullName, OrderId = newOrder.OrderID, OrderInfo = "Thanh toan qua MOMO PAY" });
+                if (momoPaymentUrl == null)
                 {
                     return MessageStatus.Failed;
                 }
-                //gửi mail xác nhận
-                _mailServices.SendMail(new MailDTOs()
-                {
-                    To = orderInfo.Email,
-                    Body = $@"
+                await SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
+
+                await SaveOrderAndOrderItems(newOrder, cartItems);
+
+                
+            }
+            return MessageStatus.Success;
+        }
+        // xóa đơn khi thanh toán thất bại => gọi ở api return từ momo
+        public async Task DeleteOrderAndOrderDetail(string orderId)
+        {
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
+
+            if (order != null)
+            {
+                _dbContext.Orders.Remove(order);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+        private Orders BuildOrderFromOrderInfo(OrderInfo orderInfo)
+        {
+            return new Orders
+            {
+                OrderID = Guid.NewGuid().ToString(),
+                FullName = orderInfo.FullName,
+                Email = orderInfo.Email,
+                Phone = orderInfo.Phone,
+                Address = orderInfo.Address,
+                PaymentID = orderInfo.PaymentID,
+                OrderStatusID = 1,
+                CreatedAt = DateTime.Now
+            };
+        }
+
+        /*private async Task<string> ProcessMomoPayment(Orders newOrder)
+        {
+            var orderForm = new OrderForm
+            {
+                OrderID = newOrder.OrderID,
+                ActualPrice = newOrder.ActualPrice,
+                FullName = newOrder.FullName
+            };
+
+            return  _moMoServices.MomoPay(orderForm); // Đảm bảo rằng phương thức MomoPay cũng là async
+        }*/
+
+        private async Task SendOrderConfirmationEmail(string email, string fullName)
+        {
+            var mailDto = new MailDTOs
+            {
+                To = email,
+                Body = GenerateOrderConfirmationEmailBody(fullName),
+                Subject = "Đặt hàng thành công!"
+            };
+
+             _mailServices.SendMail(mailDto); // Đảm bảo rằng phương thức SendMail cũng là async
+        }
+
+        private string GenerateOrderConfirmationEmailBody(string fullName)
+        {
+            // Generate the email body based on the order information and the customer's name
+            var body = $@"
 <!DOCTYPE html>
 <html>
 <head>
@@ -236,7 +288,7 @@ namespace API_Test1.Services.OrderServices
         
         <div class='content'>
             <p>
-               <span> Hello ${orderInfo.FullName}!</span>
+               <span> Hello ${fullName}!</span>
                <br>
                <span> Thank you for placing your order with [company’s name/e-store’s name]! We really appreciate that you chose our store, it means the world to us!</span>
                <br>
@@ -255,43 +307,39 @@ namespace API_Test1.Services.OrderServices
     </div>
     <img src=""https://www.wordstream.com/wp-content/uploads/2022/07/full-size-thank-you-for-your-order-images-13.png"" alt=""Cảm ơn bạn đã đặt hàng"" >
 </body>
-</html>",
-                    Subject = "Đặt hàng thành công!"
-                });
-                //lưu đon hàng v
-                _dbContext.Orders.Add(newOrder);
-                await _dbContext.SaveChangesAsync();
-
-                // Lưu thông tin chi tiết đơn hàng vào bảng "OrderItems"
-                foreach (var cartItem in cartItems)
-                {
-                    var orderItem = new OrderDetails
-                    {
-                        OrderID = newOrder.OrderID,
-                        ProductID = cartItem.ProductId,
-                        Quantity = cartItem.Quantity,
-                        PriceTotal = cartItem.Price,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
-                    };
-
-                    _dbContext.OrderDetails.Add(orderItem);
-
-                    // Cập nhật số lượng còn lại của sản phẩm sau khi mua thành công
-                    var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
-                    if (product != null)
-                    {
-                        product.Quantity -= cartItem.Quantity;
-                    }
-                }
-                await _dbContext.SaveChangesAsync();
-
-                // Xóa cookie giỏ hàng
-                _httpContextAccessor.HttpContext.Response.Cookies.Delete(CART_COOKIE_NAME);
-            }*/
-
-            return MessageStatus.Success;
+</html>";
+            return body;
         }
+
+        private async Task SaveOrderAndOrderItems(Orders newOrder, List<CartItem> cartItems)
+        {
+            _dbContext.Orders.Add(newOrder);
+            await _dbContext.SaveChangesAsync();
+
+            foreach (var cartItem in cartItems)
+            {
+                var orderItem = new OrderDetails
+                {
+                    OrderID = newOrder.OrderID,
+                    ProductID = cartItem.ProductId,
+                    Quantity = cartItem.Quantity,
+                    PriceTotal = cartItem.Price,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+
+                _dbContext.OrderDetails.Add(orderItem);
+
+                var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
+                if (product != null)
+                {
+                    product.Quantity -= cartItem.Quantity;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
 
         //xem chi tiết hóa đơn
         public async Task<IEnumerable<dynamic>> GetOrderDetail(string orderID)

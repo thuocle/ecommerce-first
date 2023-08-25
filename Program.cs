@@ -31,6 +31,7 @@ using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
 using API_Test1.Services.PaymentServices;
 using API_Test1.Services.ProductServices.ProductImageServices;
+using API_Test1.Services.PaymentServices.MOMO.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,8 +71,8 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
     options.HttpOnly = HttpOnlyPolicy.Always;
     options.Secure = CookieSecurePolicy.Always;
 });
-builder.Services.Configure<MoMoConfig>(
-    builder.Configuration.GetSection(MoMoConfig.ConfigName));
+//configure
+builder.Services.Configure<MomoOptionModel>(builder.Configuration.GetSection("MomoAPI"));
 ///identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
@@ -98,27 +99,37 @@ builder.Services.AddAuthentication(options =>
         };
     });
 //add cors
+string[] urlCors = new string[]
+{
+    "https://localhost:44311",
+    "https://test-payment.momo.vn",
+    "https://localhost:7203",
+    "http://localhost:5070"
+};
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        builder.WithOrigins(urlCors)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseCors(builder => builder.WithOrigins("http://localhost:5070").AllowAnyHeader().AllowAnyMethod());
+app.UseCors();
 app.UseHttpsRedirection();
 app.UseCors();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

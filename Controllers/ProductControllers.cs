@@ -2,7 +2,7 @@
 
 namespace API_Test1.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/product")]
     [ApiController]
     public class ProductControllers : ControllerBase
     {

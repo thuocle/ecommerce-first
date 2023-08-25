@@ -112,14 +112,14 @@ namespace API_Test1.Services.CartServices
         public double? GetOriginalTotalPrice()
         {
             var cartItems = GetCartItems();
-            double? OriginaltotalPrice = 0;
+            double? originalTotalPrice = 0;
             foreach (var cartItem in cartItems)
             {
-                OriginaltotalPrice += cartItem.Quantity * cartItem.Price ;
+                originalTotalPrice += cartItem.Quantity * cartItem.Price;
             }
-            return OriginaltotalPrice;
-        } 
-        //tong ttien sau khi giam gia
+            return originalTotalPrice;
+        }
+
         public double? GetTotalPrice()
         {
             var cartItems = GetCartItems();

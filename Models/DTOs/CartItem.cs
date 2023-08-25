@@ -7,5 +7,7 @@
             public double? Price { get; set; }
             public int? DiscountPercentage { get; set; } // Tỷ lệ giảm giá cho sản phẩm
             public int? Quantity { get; set; }
+            public double? TotalPrice { get; set; }
+
     }
 }

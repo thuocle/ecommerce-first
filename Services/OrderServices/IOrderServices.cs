@@ -13,6 +13,7 @@
         #endregion
         #region anonymous
         public Task<MessageStatus> CreateOrder(OrderInfo orderInfo);
+        public Task DeleteOrderAndOrderDetail(string orderId);
         public Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId);
         public Task<IEnumerable<dynamic>> GetOrderDetail(string orderID);
         public Task<IEnumerable<dynamic>> FindOrderById(string orderID);
