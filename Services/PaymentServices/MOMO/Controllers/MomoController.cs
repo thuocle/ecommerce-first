@@ -1,6 +1,9 @@
-﻿using API_Test1.Services.CartServices;
+﻿using API_Test1.Models.ViewModels;
+using API_Test1.Services.CartServices;
 using API_Test1.Services.OrderServices;
 using API_Test1.Services.PaymentServices.MOMO.Model;
+using NuGet.Protocol;
+
 namespace API_Test1.Services.PaymentServices.MOMO.Controllers
 {
     [Route("api/momo")]
@@ -18,24 +21,33 @@ namespace API_Test1.Services.PaymentServices.MOMO.Controllers
             _orderServices = orderServices;
         }
         [HttpPost]
-        public async Task<ActionResult<string>> CreatePaymentUrl(OrderInfo model)
+        public async Task<ActionResult<string>> CreatePaymentUrl([FromForm]OrderInfo model)
         {
             var res = await _momoService.CreatePaymentAsync(model);
             return res.PayUrl;
         }
         [HttpGet("return")]
-        public ActionResult<MomoExecuteResponseModel> PaymentCallBack()
+        public async Task<ActionResult<MomoExecuteResponseModel>> PaymentCallBack()
         {
             var momoReturn = HttpContext.Request.Query;
-            if (momoReturn.Count()>0)
+            if (momoReturn.Count() == 0)
                 return BadRequest();
+
             var response = _momoService.PaymentExecuteAsync(momoReturn);
-            if(response.ErrorCode != 0) 
+
+            if (response.ErrorCode == 0)
             {
-                _orderServices.DeleteOrderAndOrderDetail(response.OrderId);
+                var email = await _orderServices.GetEmailByOrderId(response.OrderId);
+                var name = await _orderServices.GetFullNameByOrderId(response.OrderId);
+                var sendMail = _orderServices.SendOrderConfirmationEmail(email, name);
+                var result = _cartServices.ClearCart();
+
+                if (result)
+                    return response;
             }
-            _cartServices.ClearCart();
-            return response;
+
+            await _orderServices.DeleteOrderAndOrderDetail(response.OrderId);
+            return BadRequest();
         }
     }
 }

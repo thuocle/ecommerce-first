@@ -72,7 +72,7 @@ namespace API_Test1.Services.AccountServices
             var refreshToken = new RefreshToken
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-                Expires = DateTime.Now.AddDays(7),
+                Expires = DateTime.Now.AddDays(30),
                 Created = DateTime.Now
             };
 
@@ -231,7 +231,7 @@ namespace API_Test1.Services.AccountServices
                 var token = await GenerateAuthTokenAsync(user);
                 var cookieOptions = new CookieOptions
                 {
-                    Expires = DateTime.UtcNow.AddMonths(1),
+                    Expires = DateTime.UtcNow.AddDays(3),
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.None
@@ -272,6 +272,18 @@ namespace API_Test1.Services.AccountServices
             var newToken = await GenerateAuthTokenAsync(user);
             var newRefreshToken = GenerateRefreshToken();
             await SetRefreshToken(newRefreshToken, user);
+            //luu vao cookie
+            var existingCookie = _httpContext.HttpContext.Request.Cookies["User"];
+
+            // Lưu token mới vào cookie đăng nhập
+            var cookieOptions = new CookieOptions
+            {
+                Expires = DateTime.UtcNow.AddDays(3),
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            };
+            _httpContext.HttpContext.Response.Cookies.Append("User", newToken, cookieOptions);
 
             return newToken;
         }

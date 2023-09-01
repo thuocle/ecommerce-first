@@ -82,10 +82,10 @@ namespace API_Test1.Controllers
         }
 
         [HttpPost("clear")]
-        public async Task<IActionResult> ClearCart()
+        public IActionResult ClearCart()
         {
-            var result = await _cartServices.ClearCart();
-            if (result == MessageStatus.Success)
+            var result = _cartServices.ClearCart();
+            if (result == true)
                 return Ok();
             else
                 return BadRequest();

@@ -13,6 +13,9 @@
         #endregion
         #region anonymous
         public Task<OrderForm> CreateOrder(OrderInfo orderInfo);
+        public Task<string> GetEmailByOrderId(string orderId);
+        public Task<string> GetFullNameByOrderId(string orderId);
+        public Task SendOrderConfirmationEmail(string email, string fullName);
         public Task DeleteOrderAndOrderDetail(string orderId);
         public Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId);
         public Task<IEnumerable<dynamic>> GetOrderDetail(string orderID);

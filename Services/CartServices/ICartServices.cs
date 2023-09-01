@@ -10,7 +10,7 @@
         public int? GetTotalQuantity();
         public double? GetOriginalTotalPrice();
         public double? GetTotalPrice();
-        public Task<MessageStatus> ClearCart();
+        public bool ClearCart();
         public bool IsCartEmpty();
     }
 }

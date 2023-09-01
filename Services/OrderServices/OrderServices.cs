@@ -168,11 +168,11 @@ namespace API_Test1.Services.OrderServices
 
             newOrder.OriginalPrice = originalPrice;
             newOrder.ActualPrice = actualPrice;
-            await SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
+            newOrder.OrderID = Guid.NewGuid().ToString();
 
             await SaveOrderAndOrderItems(newOrder, cartItems);
 
-            var newPay = new OrderForm { Amount = actualPrice, FullName = newOrder.FullName, OrderId = newOrder.OrderID, OrderInfo = "Thanh toan qua MOMO PAY" };
+            var newPay = new OrderForm { Amount = actualPrice, FullName = newOrder.FullName, OrderId = newOrder.OrderID};
                 
             return newPay;
         }
@@ -214,7 +214,23 @@ namespace API_Test1.Services.OrderServices
             return  _moMoServices.MomoPay(orderForm); // Đảm bảo rằng phương thức MomoPay cũng là async
         }*/
 
-        private async Task SendOrderConfirmationEmail(string email, string fullName)
+        public async Task<string> GetEmailByOrderId(string orderId)
+        {
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
+            var email = order.Email;
+            if (order == null || email == null)
+                return MessageStatus.Failed.ToString("empty");
+            return email;
+        }
+        public async Task<string> GetFullNameByOrderId(string orderId)
+        {
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
+            var name = order.FullName;
+            if (order == null || name == null)
+                return MessageStatus.Failed.ToString("empty");
+            return name;
+        }
+        public async Task SendOrderConfirmationEmail(string email, string fullName)
         {
             var mailDto = new MailDTOs
             {

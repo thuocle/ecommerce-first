@@ -133,17 +133,15 @@ namespace API_Test1.Services.CartServices
             return totalPrice;
         }
         //xoa tat ca gio hang
-        public async Task<MessageStatus> ClearCart()
+        public bool ClearCart()
         {
             var cookieOptions = new CookieOptions
             {
-                Expires = DateTime.Now.AddDays(-1)
+                Expires = DateTime.UtcNow.AddDays(-1)
             };
 
             _httpContextAccessor.HttpContext.Response.Cookies.Delete(CART_COOKIE_NAME);
-            await Task.CompletedTask;
-
-            return MessageStatus.Success;
+            return true;
         }
 
         public bool IsCartEmpty()
