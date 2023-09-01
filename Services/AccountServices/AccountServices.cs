@@ -1,5 +1,10 @@
 ﻿using API_Test1.Models.ViewModels;
 using API_Test1.Services.FileServices;
+using Azure;
+using Azure.Core;
+using Google.Apis.Drive.v3.Data;
+using System.Linq;
+
 namespace API_Test1.Services.AccountServices
 {
     public class AccountServices : IAccountServices
@@ -11,7 +16,6 @@ namespace API_Test1.Services.AccountServices
         private readonly IMailServices _mailServices;
         private readonly IHttpContextAccessor _httpContext;
         private readonly IFileServices _fileServices;
-
         public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext, IFileServices fileServices)
         {
             _userManager = userManager;
@@ -41,7 +45,7 @@ namespace API_Test1.Services.AccountServices
             (
                 issuer: _configuration["JWT:ValidIssuer"],
                 audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddMonths(3),
+                expires: DateTime.Now.AddDays(1),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSignInKey, SecurityAlgorithms.HmacSha512Signature)
             );
@@ -54,6 +58,7 @@ namespace API_Test1.Services.AccountServices
             Random rd = new Random();
             return rd.Next(999999).ToString();
         }
+
         //check quyen
         private async Task EnsureRoleExists(string roleName)
         {
@@ -62,6 +67,33 @@ namespace API_Test1.Services.AccountServices
                 await _roleManager.CreateAsync(new IdentityRole(roleName));
             }
         }
+        private RefreshToken GenerateRefreshToken()
+        {
+            var refreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Expires = DateTime.Now.AddDays(7),
+                Created = DateTime.Now
+            };
+
+            return refreshToken;
+        }
+        private async Task SetRefreshToken(RefreshToken newRefreshToken, ApplicationUser user)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = newRefreshToken.Expires
+            };
+            _httpContext.HttpContext.Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
+
+            user.RefreshToken = newRefreshToken.Token;
+            user.RefreshTokenCreated = newRefreshToken.Created;
+            user.RefreshTokenExpiry = newRefreshToken.Expires;
+             _dbContext.Users.Update(user);
+            await _dbContext.SaveChangesAsync();
+        }
+
         #endregion
         #region For User
 
@@ -77,7 +109,7 @@ namespace API_Test1.Services.AccountServices
             if (registerModel.Password != registerModel.ConfirmPassword)
                 return MessageStatus.MissMatchedPassword;
             // tao 1 account moi
-            ApplicationUser account = new()
+            ApplicationUser user = new ApplicationUser()
             {
                 FullName = registerModel.FullName,
                 UserName = registerModel.UserName,
@@ -86,10 +118,10 @@ namespace API_Test1.Services.AccountServices
                 Status = Status.Pending,
                 VerifyToken = CreateRandomToken(),
                 VerifyTokenExpiry = DateTime.Now.AddMinutes(15),
-                CreateAt = DateTime.Now
+                CreateAt = DateTime.Now,
             };
             //thêm vào DB
-            var result = await _userManager.CreateAsync(account, registerModel.Password);
+            var result = await _userManager.CreateAsync(user, registerModel.Password);
             if (!result.Succeeded)
             {
                 return MessageStatus.Failed;
@@ -101,7 +133,7 @@ namespace API_Test1.Services.AccountServices
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
             if (await _roleManager.RoleExistsAsync(UserRoles.User))
             {
-                await _userManager.AddToRoleAsync(account, UserRoles.User);
+                await _userManager.AddToRoleAsync(user, UserRoles.User);
             }
             //send mail confirm
             _mailServices.SendMail(new MailDTOs() { 
@@ -157,9 +189,9 @@ namespace API_Test1.Services.AccountServices
         <div class='content'>
             <p>
                 Đăng ký thành công, hãy xác nhận để trải nghiệm.
-                Đây là mã xác nhận: <span class='token'>{account.VerifyToken}</span>.
+                Đây là mã xác nhận: <span class='token'>{user.VerifyToken}</span>.
                 Hãy kích hoạt trong thời gian còn hiệu lực.
-                Thời gian hiệu lực kết thúc là {account.VerifyTokenExpiry} kể từ khi nhận được thông báo này!
+                Thời gian hiệu lực kết thúc là {user.VerifyTokenExpiry} kể từ khi nhận được thông báo này!
             </p>
         </div>
         
@@ -205,9 +237,43 @@ namespace API_Test1.Services.AccountServices
                     SameSite = SameSiteMode.None
                 };
                 _httpContext.HttpContext.Response.Cookies.Append("User", token, cookieOptions);
+                var refreshToken = GenerateRefreshToken();
+                await SetRefreshToken(refreshToken, user);
                 return token;
             }
             return MessageStatus.AccountNotFound.ToString();
+        }
+        public async Task<ApplicationUser> GetUserByRefreshTokenAsync(string refreshToken)
+        {
+            return await _dbContext.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+        }
+        public async Task<string> RefreshToken()
+        {
+            var refreshToken = _httpContext.HttpContext.Request.Cookies["refreshToken"];
+            var user = await GetUserByRefreshTokenAsync(refreshToken);
+
+            if (user == null)
+            {
+                return MessageStatus.AccountNotFound.ToString();
+            }
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                throw new Exception("Refresh Token not found.");
+            }
+            if (user.RefreshToken == null)
+            {
+                return MessageStatus.InvalidToken.ToString();
+            }
+            else if (user.RefreshTokenExpiry < DateTime.Now)
+            {
+                return MessageStatus.ExpiredToken.ToString();
+            }
+
+            var newToken = await GenerateAuthTokenAsync(user);
+            var newRefreshToken = GenerateRefreshToken();
+            await SetRefreshToken(newRefreshToken, user);
+
+            return newToken;
         }
         //forgot
         public async Task<MessageStatus> ForgotPasswordAsync(string email)
@@ -543,7 +609,7 @@ namespace API_Test1.Services.AccountServices
                 // Đăng xuất người dùng khỏi ứng dụng
 
                 // Xóa cookie chứa token
-                _httpContext.HttpContext.Response.Cookies.Delete("MyCookiesWithLove");
+                _httpContext.HttpContext.Response.Cookies.Delete("User");
 
                 return MessageStatus.Success;
             }

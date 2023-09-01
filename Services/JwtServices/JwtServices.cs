@@ -47,12 +47,18 @@ namespace API_Test1.Services.JwtServices
         public  string GetUserId()
         {
             var userName = GetUsernameFromToken();
+            if (userName == null)
+                return null;
             var user =  _dbContext.Users.FirstOrDefault(x => x.UserName == userName);
             return user.Id;
         }
         public string GetUsernameFromToken()
         {
             var token = GetTokenFromCookie();
+            if(token == null)
+            {
+                return null;
+            }
             var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
 
@@ -66,6 +72,16 @@ namespace API_Test1.Services.JwtServices
 
             return username;
         }
+        public string GetMyName()
+        {
+            var result = string.Empty;
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                result = _httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Name);
+            }
+            return result;
+        }
+
         private string GetTokenFromCookie()
         {
             var httpContext = _httpContextAccessor.HttpContext;

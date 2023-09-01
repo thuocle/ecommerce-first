@@ -12,7 +12,7 @@
         public Task<PageInfo<dynamic>> GetAllOrderForUser(Pagination page, string userID);
         #endregion
         #region anonymous
-        public Task<MessageStatus> CreateOrder(OrderInfo orderInfo);
+        public Task<OrderForm> CreateOrder(OrderInfo orderInfo);
         public Task DeleteOrderAndOrderDetail(string orderId);
         public Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId);
         public Task<IEnumerable<dynamic>> GetOrderDetail(string orderID);

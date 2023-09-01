@@ -6,6 +6,7 @@
         public Task<MessageStatus> RegisterAsync(RegisterForm registerModel);
         public Task<MessageStatus> VerifyAccountAsync(string token);
         public Task<string> LoginAsync(LoginForm loginModel);
+        public Task<string> RefreshToken();
         public Task<MessageStatus> LogoutAsync();
         public Task<MessageStatus> ForgotPasswordAsync(string email);
         public Task<MessageStatus> ResetPasswordAsync(ResetPasswordForm request);

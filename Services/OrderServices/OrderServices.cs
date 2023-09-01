@@ -2,6 +2,7 @@
 using API_Test1.Services.CartServices;
 using API_Test1.Services.JwtServices;
 using API_Test1.Services.PaymentServices.MOMO;
+using API_Test1.Services.PaymentServices.MOMO.Model;
 using Microsoft.CodeAnalysis;
 using System.Net.Http;
 
@@ -13,19 +14,17 @@ namespace API_Test1.Services.OrderServices
         private readonly ICartServices _cartServices;
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
-        private readonly IMoMoServices _moMoServices;
         private readonly IJwtServices _jwtServices;
         private readonly IMailServices _mailServices;
         private readonly HttpClient _httpClient;
         private const string CART_COOKIE_NAME = "CartItems";
         private const string USER_COOKIE_NAME = "User";
-        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration, IMoMoServices moMoServices, IJwtServices jwtServices, IMailServices mailServices, HttpClient httpClient)
+        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration,  IJwtServices jwtServices, IMailServices mailServices, HttpClient httpClient)
         {
             _httpContextAccessor = httpContextAccessor;
             _cartServices = cartServices;
             _dbContext = dbContext;
             _configuration = configuration;
-            _moMoServices = moMoServices;
             _jwtServices = jwtServices;
             _mailServices = mailServices;
             _httpClient = httpClient;
@@ -154,7 +153,7 @@ namespace API_Test1.Services.OrderServices
         //Đặt hàng 
 
 
-        public async Task<MessageStatus> CreateOrder(OrderInfo orderInfo)
+        public async Task<OrderForm> CreateOrder(OrderInfo orderInfo)
         {
             var cartItems = _cartServices.GetCartItems();
             var newOrder = BuildOrderFromOrderInfo(orderInfo);
@@ -169,21 +168,13 @@ namespace API_Test1.Services.OrderServices
 
             newOrder.OriginalPrice = originalPrice;
             newOrder.ActualPrice = actualPrice;
+            await SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
 
-            if (orderInfo.PaymentID == 5)
-            {
-                var momoPaymentUrl = _moMoServices.CreatePaymentAsync(new OrderForm { Amount = actualPrice, FullName = newOrder.FullName, OrderId = newOrder.OrderID, OrderInfo = "Thanh toan qua MOMO PAY" });
-                if (momoPaymentUrl == null)
-                {
-                    return MessageStatus.Failed;
-                }
-                await SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
+            await SaveOrderAndOrderItems(newOrder, cartItems);
 
-                await SaveOrderAndOrderItems(newOrder, cartItems);
-
+            var newPay = new OrderForm { Amount = actualPrice, FullName = newOrder.FullName, OrderId = newOrder.OrderID, OrderInfo = "Thanh toan qua MOMO PAY" };
                 
-            }
-            return MessageStatus.Success;
+            return newPay;
         }
         // xóa đơn khi thanh toán thất bại => gọi ở api return từ momo
         public async Task DeleteOrderAndOrderDetail(string orderId)

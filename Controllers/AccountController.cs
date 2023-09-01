@@ -39,6 +39,16 @@
 
             return Ok(re);
         }
+        [HttpPost]
+        [Route("refresh-token")]
+        public async Task<IActionResult> ResfreshToken()
+        {
+            var re = await _accountServices.RefreshToken();
+            if (re == null)
+                return BadRequest("that bai");
+
+            return Ok(re);
+        }
         [HttpPost("ForgotPassword")]
         public async Task<IActionResult> ForgotPassword(string email)
         {

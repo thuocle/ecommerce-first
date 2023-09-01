@@ -18,7 +18,7 @@ namespace API_Test1.Services.PaymentServices.MOMO.Controllers
             _orderServices = orderServices;
         }
         [HttpPost]
-        public async Task<ActionResult<string>> CreatePaymentUrl(OrderForm model)
+        public async Task<ActionResult<string>> CreatePaymentUrl(OrderInfo model)
         {
             var res = await _momoService.CreatePaymentAsync(model);
             return res.PayUrl;

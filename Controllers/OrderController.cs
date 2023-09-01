@@ -58,20 +58,6 @@ namespace API_Test1.Controllers
             }
         }
         [HttpPost("create-order")]
-        public async Task<IActionResult> CreateOrder([FromForm] OrderInfo orderInfo)
-        {
-            var messageStatus = await _orderService.CreateOrder(orderInfo);
-
-            if (messageStatus == MessageStatus.Success)
-            {
-                return Ok("Order created successfully.");
-            }
-            else
-            {
-                return BadRequest("Failed to create order.");
-            }
-        }
-
         // GetOrderDetail API
         [HttpGet("{orderID}/details")]
         public async Task<IActionResult> GetOrderDetail(string orderID)

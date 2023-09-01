@@ -1,4 +1,5 @@
-﻿using API_Test1.Services.PaymentServices.MOMO.Model;
+﻿using API_Test1.Services.OrderServices;
+using API_Test1.Services.PaymentServices.MOMO.Model;
 using Microsoft.DotNet.Scaffolding.Shared.CodeModifier.CodeChange;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -8,13 +9,16 @@ namespace API_Test1.Services.PaymentServices.MOMO
     public class MoMoServices : IMoMoServices
     {
         private readonly IOptions<MomoOptionModel> _options;
+        private readonly IOrderServices _orderServices;
 
-        public MoMoServices(IOptions<MomoOptionModel> options)
+        public MoMoServices(IOptions<MomoOptionModel> options, IOrderServices orderServices)
         {
             _options = options;
+            _orderServices = orderServices;
         }
-        public async Task<MomoCreatePaymentResponseModel> CreatePaymentAsync(OrderForm model)
+        public async Task<MomoCreatePaymentResponseModel> CreatePaymentAsync(OrderInfo orderInfo)
         {
+            var model = await _orderServices.CreateOrder(orderInfo);
             /*model.OrderId = DateTime.UtcNow.AddHours(7).Ticks.ToString();*/
             model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: " + model.OrderInfo;
 
