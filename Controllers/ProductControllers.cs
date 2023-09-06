@@ -103,7 +103,6 @@ namespace API_Test1.Controllers
                 return Ok(result);
             }
             
-            
             [HttpGet("{productId}")]
             public async Task<IActionResult> GetProductByIdAsync(int productId)
             {

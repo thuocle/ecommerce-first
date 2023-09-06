@@ -17,9 +17,10 @@ namespace API_Test1.Services.OrderServices
         private readonly IJwtServices _jwtServices;
         private readonly IMailServices _mailServices;
         private readonly HttpClient _httpClient;
+        private readonly IAccountServices _accountServices;
         private const string CART_COOKIE_NAME = "CartItems";
         private const string USER_COOKIE_NAME = "User";
-        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration,  IJwtServices jwtServices, IMailServices mailServices, HttpClient httpClient)
+        public OrderServices(IHttpContextAccessor httpContextAccessor, ICartServices cartServices, ApplicationDbContext dbContext, IConfiguration configuration,  IJwtServices jwtServices, IMailServices mailServices, HttpClient httpClient, IAccountServices accountServices)
         {
             _httpContextAccessor = httpContextAccessor;
             _cartServices = cartServices;
@@ -28,6 +29,7 @@ namespace API_Test1.Services.OrderServices
             _jwtServices = jwtServices;
             _mailServices = mailServices;
             _httpClient = httpClient;
+            _accountServices = accountServices;
         }
 
         #region private
@@ -157,18 +159,22 @@ namespace API_Test1.Services.OrderServices
         {
             var cartItems = _cartServices.GetCartItems();
             var newOrder = BuildOrderFromOrderInfo(orderInfo);
-            //xác thực login
+            //xác thực login, nếu login thì lấy thông tin tài khoản để tạo đơn hàng
             if (_jwtServices.IsUserLoggedIn())
             {
                 newOrder.UserId = _jwtServices.GetUserId();
+                var user = await _accountServices.GetUserProfileAsync(newOrder.UserId);
+                newOrder.Address = user.Address;
+                newOrder.Phone = user.PhoneNumber;
+                newOrder.FullName = user.FullName;
             }
-
+            //lấy giá gốc và thành tiền
             var originalPrice = _cartServices.GetOriginalTotalPrice();
             var actualPrice = _cartServices.GetTotalPrice();
 
             newOrder.OriginalPrice = originalPrice;
             newOrder.ActualPrice = actualPrice;
-            newOrder.OrderID = Guid.NewGuid().ToString();
+            newOrder.OrderID = new Random().Next(1, 999999).ToString();
 
             await SaveOrderAndOrderItems(newOrder, cartItems);
 
