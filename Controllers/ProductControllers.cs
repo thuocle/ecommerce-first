@@ -12,7 +12,7 @@ namespace API_Test1.Controllers
             {
                 _productService = productService;
             }
-
+            [Authorize(Roles =UserRoles.Admin)]    
             [HttpPost("AddProduct")]
             public async Task<IActionResult> AddProduct([FromForm]ProductForm productModel)
             {
@@ -36,6 +36,7 @@ namespace API_Test1.Controllers
                 return Ok(result);
             }
 
+            [Authorize(Roles =UserRoles.Admin)]
             [HttpPut("UpdateProduct/{productId}")]
             public async Task<IActionResult> UpdateProduct(int productId,[FromForm] ProductForm productModel)
             {
@@ -59,6 +60,7 @@ namespace API_Test1.Controllers
                 return Ok(result);
             }
 
+            [Authorize(Roles =UserRoles.Admin)]
             [HttpDelete("RemoveProduct/{productId}")]
             public async Task<IActionResult> RemoveProduct(int productId)
             {
@@ -76,28 +78,32 @@ namespace API_Test1.Controllers
 
                 return Ok(result);
             }
-
+            
+            [Authorize(Roles =UserRoles.Admin)]
             [HttpGet("getallforAdmin")]
             public async Task<IActionResult> GetAllProductsForAdmin([FromQuery] Pagination page)
             {
                 var result = await _productService.GetAllProductForAdminAsync(page);
                 return Ok(result);
             }
-
+            
+            [Authorize(Roles =UserRoles.Admin)]
             [HttpGet("categoryForAdmin/{categoryID}")]
             public async Task<IActionResult> FindProductsByCategoryForAdmin([FromQuery] Pagination page, int categoryID)
             {
                 var result = await _productService.FindProductByCategoryForAdminAsync(page, categoryID);
                 return Ok(result);
             }
-
+            
+            [Authorize(Roles =UserRoles.Admin)]
             [HttpGet("nameForAdmin")]
             public async Task<IActionResult> FindProductsByNameForAdmin([FromQuery] Pagination page, string keyWord)
             {
                 var result = await _productService.FindProductByNameForAdminAsync(page, keyWord);
                 return Ok(result);
             }
-
+            
+            
             [HttpGet("{productId}")]
             public async Task<IActionResult> GetProductByIdAsync(int productId)
             {

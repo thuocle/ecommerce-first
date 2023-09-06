@@ -295,9 +295,9 @@ namespace API_Test1.Services.OrderServices
         
         <div class='content'>
             <p>
-               <span> Hello ${fullName}!</span>
+               <span> Hello {fullName}!</span>
                <br>
-               <span> Thank you for placing your order with [company’s name/e-store’s name]! We really appreciate that you chose our store, it means the world to us!</span>
+               <span> Thank you for placing your order with Our Store! We really appreciate that you chose our store, it means the world to us!</span>
                <br>
                <span> We want to let you know that we will inform you about the subsequent stages of order processing via separate emails.</span>
                <br>
