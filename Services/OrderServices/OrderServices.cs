@@ -60,6 +60,124 @@ namespace API_Test1.Services.OrderServices
 
             return actualPrice;
         }
+        private Orders BuildOrderFromOrderInfo(OrderInfo orderInfo)
+        {
+            return new Orders
+            {
+                OrderID = Guid.NewGuid().ToString(),
+                FullName = orderInfo.FullName,
+                Email = orderInfo.Email,
+                Phone = orderInfo.Phone,
+                Address = orderInfo.Address,
+                PaymentID = orderInfo.PaymentID,
+                OrderStatusID = 1,
+                CreatedAt = DateTime.Now
+            };
+        }
+        private string GenerateOrderConfirmationEmailBody(string fullName)
+        {
+            // Generate the email body based on the order information and the customer's name
+            var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333333;
+        }}
+        
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+
+        .header {{
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: center;
+        }}
+
+        .content {{
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+        }}
+
+        .token {{
+            font-weight: bold;
+            font-size: 18px;
+            color: #ff0000;
+        }}
+
+        .footer {{
+            padding: 10px;
+            text-align: center;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h2>Đặt hàng thành công</h2>
+        </div>
+        
+        <div class='content'>
+            <p>
+               <span> Hello {fullName}!</span>
+               <br>
+               <span> Thank you for placing your order with Our Store! We really appreciate that you chose our store, it means the world to us!</span>
+               <br>
+               <span> We want to let you know that we will inform you about the subsequent stages of order processing via separate emails.</span>
+               <br>
+               <span>Have a great day!</span>
+               <br>
+               
+            </p>
+        </div>
+        
+        <div class='footer'>
+            <span><b><i>The Love at HappyLucky
+</i></b></span>
+        </div>
+    </div>
+    <img src=""https://www.wordstream.com/wp-content/uploads/2022/07/full-size-thank-you-for-your-order-images-13.png"" alt=""Cảm ơn bạn đã đặt hàng"" >
+</body>
+</html>";
+            return body;
+        }
+
+        private async Task SaveOrderAndOrderItems(Orders newOrder, List<CartItem> cartItems)
+        {
+            _dbContext.Orders.Add(newOrder);
+            await _dbContext.SaveChangesAsync();
+
+            foreach (var cartItem in cartItems)
+            {
+                var orderItem = new OrderDetails
+                {
+                    OrderID = newOrder.OrderID,
+                    ProductID = cartItem.ProductId,
+                    Quantity = cartItem.Quantity,
+                    PriceTotal = cartItem.Price,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+
+                _dbContext.OrderDetails.Add(orderItem);
+
+                var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
+                if (product != null)
+                {
+                    product.Quantity -= cartItem.Quantity;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
         #endregion
 
         #region for admin
@@ -182,7 +300,15 @@ namespace API_Test1.Services.OrderServices
                 
             return newPay;
         }
-        // xóa đơn khi thanh toán thất bại => gọi ở api return từ momo
+        //ship cod
+        public async Task<MessageStatus> OrderByShipCOD(OrderInfo orderInfo)
+        {
+            var order = await CreateOrder(orderInfo);
+            var sendmail = SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
+            var clear = _cartServices.ClearCart();
+            return MessageStatus.Success;
+        }
+        // xóa đơn khi thanh toán thất bại
         public async Task DeleteOrderAndOrderDetail(string orderId)
         {
             var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
@@ -193,32 +319,7 @@ namespace API_Test1.Services.OrderServices
                 await _dbContext.SaveChangesAsync();
             }
         }
-        private Orders BuildOrderFromOrderInfo(OrderInfo orderInfo)
-        {
-            return new Orders
-            {
-                OrderID = Guid.NewGuid().ToString(),
-                FullName = orderInfo.FullName,
-                Email = orderInfo.Email,
-                Phone = orderInfo.Phone,
-                Address = orderInfo.Address,
-                PaymentID = orderInfo.PaymentID,
-                OrderStatusID = 1,
-                CreatedAt = DateTime.Now
-            };
-        }
-
-        /*private async Task<string> ProcessMomoPayment(Orders newOrder)
-        {
-            var orderForm = new OrderForm
-            {
-                OrderID = newOrder.OrderID,
-                ActualPrice = newOrder.ActualPrice,
-                FullName = newOrder.FullName
-            };
-
-            return  _moMoServices.MomoPay(orderForm); // Đảm bảo rằng phương thức MomoPay cũng là async
-        }*/
+        
 
         public async Task<string> GetEmailByOrderId(string orderId)
         {
@@ -248,111 +349,6 @@ namespace API_Test1.Services.OrderServices
              _mailServices.SendMail(mailDto); // Đảm bảo rằng phương thức SendMail cũng là async
         }
 
-        private string GenerateOrderConfirmationEmailBody(string fullName)
-        {
-            // Generate the email body based on the order information and the customer's name
-            var body = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #333333;
-        }}
-        
-        .container {{
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }}
-
-        .header {{
-            background-color: #f5f5f5;
-            padding: 10px;
-            text-align: center;
-        }}
-
-        .content {{
-            padding: 20px;
-            background-color: #ffffff;
-            border: 1px solid #dddddd;
-        }}
-
-        .token {{
-            font-weight: bold;
-            font-size: 18px;
-            color: #ff0000;
-        }}
-
-        .footer {{
-            padding: 10px;
-            text-align: center;
-        }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h2>Đặt hàng thành công</h2>
-        </div>
-        
-        <div class='content'>
-            <p>
-               <span> Hello {fullName}!</span>
-               <br>
-               <span> Thank you for placing your order with Our Store! We really appreciate that you chose our store, it means the world to us!</span>
-               <br>
-               <span> We want to let you know that we will inform you about the subsequent stages of order processing via separate emails.</span>
-               <br>
-               <span>Have a great day!</span>
-               <br>
-               
-            </p>
-        </div>
-        
-        <div class='footer'>
-            <span><b><i>The Love at HappyLucky
-</i></b></span>
-        </div>
-    </div>
-    <img src=""https://www.wordstream.com/wp-content/uploads/2022/07/full-size-thank-you-for-your-order-images-13.png"" alt=""Cảm ơn bạn đã đặt hàng"" >
-</body>
-</html>";
-            return body;
-        }
-
-        private async Task SaveOrderAndOrderItems(Orders newOrder, List<CartItem> cartItems)
-        {
-            _dbContext.Orders.Add(newOrder);
-            await _dbContext.SaveChangesAsync();
-
-            foreach (var cartItem in cartItems)
-            {
-                var orderItem = new OrderDetails
-                {
-                    OrderID = newOrder.OrderID,
-                    ProductID = cartItem.ProductId,
-                    Quantity = cartItem.Quantity,
-                    PriceTotal = cartItem.Price,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
-                _dbContext.OrderDetails.Add(orderItem);
-
-                var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.ProductID == cartItem.ProductId);
-                if (product != null)
-                {
-                    product.Quantity -= cartItem.Quantity;
-                }
-            }
-
-            await _dbContext.SaveChangesAsync();
-        }
-
 
         //xem chi tiết hóa đơn
         public async Task<IEnumerable<dynamic>> GetOrderDetail(string orderID)
@@ -369,7 +365,7 @@ namespace API_Test1.Services.OrderServices
                                    product.NameProduct,
 
                                };
-            return orderDetails;
+            return await Task.FromResult(orderDetails);
         }
         // cập nhật trạng thái đơn hàng for user
         public async Task<MessageStatus> UpdateStatusOrderByUser(int statusId, string orderId)
@@ -449,7 +445,7 @@ namespace API_Test1.Services.OrderServices
                                pay.PaymentMethod,
                                orderstt.StatusName
                            };
-            return orderDetails;
+            return await Task.FromResult(orderDetails);
         }
     }
 }

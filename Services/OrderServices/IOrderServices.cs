@@ -13,6 +13,7 @@
         #endregion
         #region anonymous
         public Task<OrderForm> CreateOrder(OrderInfo orderInfo);
+        public Task<MessageStatus> OrderByShipCOD(OrderInfo orderInfo);
         public Task<string> GetEmailByOrderId(string orderId);
         public Task<string> GetFullNameByOrderId(string orderId);
         public Task SendOrderConfirmationEmail(string email, string fullName);

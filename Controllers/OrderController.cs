@@ -1,4 +1,5 @@
-﻿using API_Test1.Services.OrderServices;
+﻿using API_Test1.Models.DTOs;
+using API_Test1.Services.OrderServices;
 
 namespace API_Test1.Controllers
 {
@@ -57,7 +58,22 @@ namespace API_Test1.Controllers
                 return BadRequest("Failed to update order status.");
             }
         }
-        [HttpPost("create-order")]
+        //ship-code
+        [HttpPost("order-cod")]
+        public async Task<IActionResult> CreateOrderCOD([FromForm] OrderInfo orderInfo)
+        {
+            var result = await _orderService.OrderByShipCOD(orderInfo);
+
+            if (result == MessageStatus.Success)
+            {
+                return Ok("Order successfully.");
+            }
+            else
+            {
+                return BadRequest("Failed to order .");
+            }
+        }
+
         // GetOrderDetail API
         [HttpGet("{orderID}/details")]
         public async Task<IActionResult> GetOrderDetail(string orderID)

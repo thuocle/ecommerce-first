@@ -26,6 +26,18 @@ namespace API_Test1.Services.CartServices
 
             _httpContextAccessor.HttpContext.Response.Cookies.Append(CART_COOKIE_NAME, cookieValue, cookieOptions);
         }
+        private double OriginalPriceOnProduct(int quantity, double price)
+        {
+            double originalTotalPrice = quantity * price;
+            return originalTotalPrice;
+        }
+
+        /*private double TotalPriceOnProduct(int discountPercentage, int quantity, double price)
+        {
+                double discountAmount = price * (discountPercentage / 100.0);
+                var totalPrice = OriginalPriceOnProduct(quantity, price) - (discountAmount * quantity);
+            return totalPrice;
+        }*/
         #endregion
         public List<CartItem> GetCartItems()
         {
@@ -47,11 +59,12 @@ namespace API_Test1.Services.CartServices
             if (existingItem != null && product != null)
             {
                 existingItem.Quantity++;
+                existingItem.OriginalPrice = OriginalPriceOnProduct(existingItem.Quantity, existingItem.Price);
             }
             if ((existingItem == null && product != null))
             {
                 cartItems.Add(new CartItem { ProductId = productId, Quantity = 1, 
-                        Price = product.Result.Price, ProductName = product.Result.NameProduct, DiscountPercentage= product.Result.Discount });
+                            Price = product.Result.Price, ProductName = product.Result.NameProduct, DiscountPercentage= product.Result.Discount, OriginalPrice = OriginalPriceOnProduct(1, product.Result.Price)});
             }
             if (product == null)
                 return MessageStatus.Failed;
@@ -98,10 +111,10 @@ namespace API_Test1.Services.CartServices
             return MessageStatus.Success;
         }
         //tong so luong sp
-        public int? GetTotalQuantity()
+        public int GetTotalQuantity()
         {
             var cartItems = GetCartItems();
-            int? totalQuantity = 0;
+            int totalQuantity = 0;
             foreach (var cartItem in cartItems)
             {
                 totalQuantity += cartItem.Quantity;
@@ -109,10 +122,11 @@ namespace API_Test1.Services.CartServices
             return totalQuantity;
         }
         //tong tien goc cua gio hang
-        public double? GetOriginalTotalPrice()
+
+        public double GetOriginalTotalPrice()
         {
             var cartItems = GetCartItems();
-            double? originalTotalPrice = 0;
+            double originalTotalPrice = 0;
             foreach (var cartItem in cartItems)
             {
                 originalTotalPrice += cartItem.Quantity * cartItem.Price;
@@ -120,14 +134,14 @@ namespace API_Test1.Services.CartServices
             return originalTotalPrice;
         }
 
-        public double? GetTotalPrice()
+        public double GetTotalPrice()
         {
             var cartItems = GetCartItems();
-            double? totalPrice = GetOriginalTotalPrice();
+            double totalPrice = GetOriginalTotalPrice();
             foreach (var cartItem in cartItems)
             {
-                int? discountPercentage = cartItem.DiscountPercentage;
-                double? discountAmount = cartItem.Price * (discountPercentage / 100.0);
+                int discountPercentage = cartItem.DiscountPercentage;
+                double discountAmount = cartItem.Price * (discountPercentage / 100.0);
                 totalPrice -= discountAmount * cartItem.Quantity;
             }
             return totalPrice;
