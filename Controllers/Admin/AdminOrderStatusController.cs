@@ -1,14 +1,15 @@
 ﻿using API_Test1.Services.OrderstatusServices;
 
-namespace API_Test1.Controllers
+namespace API_Test1.Controllers.Admin
 {
-    [Route("api/[controller]")]
+    [Authorize(Roles =UserRoles.Admin)]
+    [Route("api/admin")]
     [ApiController]
-    public class OrderStatusController : ControllerBase
+    public class AdminOrderStatusController : ControllerBase
     {
         private readonly IOrderstatusServices _orderstatus;
 
-        public OrderStatusController(IOrderstatusServices orderstatus)
+        public AdminOrderStatusController(IOrderstatusServices orderstatus)
         {
             _orderstatus = orderstatus;
         }

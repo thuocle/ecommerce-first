@@ -1,9 +1,6 @@
-﻿using API_Test1.Models.ViewModels;
-using API_Test1.Services.FileServices;
-using Azure;
-using Azure.Core;
-using Google.Apis.Drive.v3.Data;
-using System.Linq;
+﻿using API_Test1.Services.FileServices;
+using API_Test1.Services.JwtServices;
+using Microsoft.AspNetCore.Authentication;
 
 namespace API_Test1.Services.AccountServices
 {
@@ -16,7 +13,9 @@ namespace API_Test1.Services.AccountServices
         private readonly IMailServices _mailServices;
         private readonly IHttpContextAccessor _httpContext;
         private readonly IFileServices _fileServices;
-        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext, IFileServices fileServices)
+        private readonly IJwtServices _jwtServices;
+
+        public AccountServices(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ApplicationDbContext dbContext, IMailServices mailServices, IHttpContextAccessor httpContext, IFileServices fileServices, IJwtServices jwtServices)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -25,6 +24,7 @@ namespace API_Test1.Services.AccountServices
             _mailServices = mailServices;
             _httpContext = httpContext;
             _fileServices = fileServices;
+            _jwtServices = jwtServices;
         }
         #region private
         //generate token for authentication on login
@@ -614,19 +614,20 @@ namespace API_Test1.Services.AccountServices
         public async Task<MessageStatus> LogoutAsync()
         {
             // Lấy thông tin user từ HttpContext
-            var user = await _userManager.GetUserAsync(_httpContext.HttpContext.User);
+            var user = _jwtServices.GetUserId();
 
-            if (user != null)
+            if (user == null)
             {
-                // Đăng xuất người dùng khỏi ứng dụng
+                return MessageStatus.Failed;
 
-                // Xóa cookie chứa token
-                _httpContext.HttpContext.Response.Cookies.Delete("User");
-
-                return MessageStatus.Success;
             }
+            // Đăng xuất người dùng khỏi ứng dụng
+            await _httpContext.HttpContext.SignOutAsync();
 
-            return MessageStatus.Failed;
+            // Xóa cookie chứa token
+            _httpContext.HttpContext.Response.Cookies.Delete("User");
+
+            return MessageStatus.Success;
         }
         //ok
         #endregion

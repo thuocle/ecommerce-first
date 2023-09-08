@@ -1,10 +1,6 @@
-﻿using API_Test1.Models.ViewModels;
-using API_Test1.Services.CartServices;
+﻿using API_Test1.Services.CartServices;
 using API_Test1.Services.JwtServices;
-using API_Test1.Services.PaymentServices.MOMO;
-using API_Test1.Services.PaymentServices.MOMO.Model;
 using Microsoft.CodeAnalysis;
-using System.Net.Http;
 
 namespace API_Test1.Services.OrderServices
 {
@@ -282,6 +278,7 @@ namespace API_Test1.Services.OrderServices
             {
                 newOrder.UserId = _jwtServices.GetUserId();
                 var user = await _accountServices.GetUserProfileAsync(newOrder.UserId);
+                newOrder.Email = user.Email;
                 newOrder.Address = user.Address;
                 newOrder.Phone = user.PhoneNumber;
                 newOrder.FullName = user.FullName;
@@ -303,7 +300,15 @@ namespace API_Test1.Services.OrderServices
         //ship cod
         public async Task<MessageStatus> OrderByShipCOD(OrderInfo orderInfo)
         {
-            var order = await CreateOrder(orderInfo);
+            var newOrder = await CreateOrder(orderInfo);
+            if (_jwtServices.IsUserLoggedIn())
+            {
+                var newOrderId = _jwtServices.GetUserId();
+                var user = await _accountServices.GetUserProfileAsync(newOrderId);
+                var sendMail = SendOrderConfirmationEmail(user.Email, user.FullName);
+                var clearCart = _cartServices.ClearCart();
+                return MessageStatus.Success;
+            }
             var sendmail = SendOrderConfirmationEmail(orderInfo.Email, orderInfo.FullName);
             var clear = _cartServices.ClearCart();
             return MessageStatus.Success;
@@ -326,7 +331,7 @@ namespace API_Test1.Services.OrderServices
             var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
             var email = order.Email;
             if (order == null || email == null)
-                return MessageStatus.Failed.ToString("empty");
+                return null;
             return email;
         }
         public async Task<string> GetFullNameByOrderId(string orderId)
@@ -334,7 +339,7 @@ namespace API_Test1.Services.OrderServices
             var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderID == orderId);
             var name = order.FullName;
             if (order == null || name == null)
-                return MessageStatus.Failed.ToString("empty");
+                return null;
             return name;
         }
         public async Task SendOrderConfirmationEmail(string email, string fullName)

@@ -12,7 +12,7 @@
 
         #region for user
         [HttpPost]
-        [Route("Register")]
+        [Route("register")]
         public async Task<IActionResult> Register([FromForm] RegisterForm registerModel)
         {
             var re = await _accountServices.RegisterAsync(registerModel);
@@ -21,7 +21,7 @@
 
             return Ok("Thành công");
         }
-        [HttpPost("verifyAccount")]
+        [HttpPost("verify-account")]
         public async Task<IActionResult> VerifyAccount(string token)
         {
             var re = await _accountServices.VerifyAccountAsync(token);
@@ -30,7 +30,7 @@
             return Ok(re);
         }
         [HttpPost]
-        [Route("Login")]
+        [Route("login")]
         public async Task<IActionResult> Login([FromForm] LoginForm loginModel)
         {
             var re = await _accountServices.LoginAsync(loginModel);
@@ -49,7 +49,7 @@
 
             return Ok(re);
         }
-        [HttpPost("ForgotPassword")]
+        [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(string email)
         {
             var re = await _accountServices.ForgotPasswordAsync(email);
@@ -57,7 +57,7 @@
                 return BadRequest("Email khong dung hoac tai khoan khong ton tai");
             return Ok(re);
         }
-        [HttpPost("ResetPassword")]
+        [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromForm] ResetPasswordForm resetPasswordModel)
         {
             var re = await _accountServices.ResetPasswordAsync(resetPasswordModel);
@@ -65,8 +65,8 @@
                 return BadRequest("Ma xac nhan khong dung hoac da het han");
             return Ok(re);
         }
-       /* [Authorize(Roles = UserRoles.User)]*/
-        [HttpPut("UpdateUserProfile")]
+        [Authorize(Roles = UserRoles.User)]
+        [HttpPut("update-user-profile")]
         public async Task<IActionResult> UpdateUserProfile(string userID, [FromForm] UserProfileForm userProfileModel)
         {
             var re = await _accountServices.UpdateUserProfileAsync(userID, userProfileModel);
@@ -74,8 +74,8 @@
                 return BadRequest("Khong thanh cong");
             return Ok(re);
         }
-      /*  [Authorize(Roles = UserRoles.User)]*/
-        [HttpGet("GetUserProfile/{userID}")]
+        [Authorize(Roles = UserRoles.User)]
+        [HttpGet("get-user-profile/{userID}")]
         public async Task<IActionResult> GetUserProfile(string userID)
         {
             var user = await _accountServices.GetUserProfileAsync(userID);
@@ -89,112 +89,6 @@
         }
         #endregion
 
-
-        #region for Admin
-        [HttpPost]
-        [Route("registerAdmin")]
-        public async Task<IActionResult> RegisterAdmin([FromForm] RegisterForm registerModel)
-        {
-            var re = await _accountServices.RegisterAdminAsync(registerModel);
-            if (re != MessageStatus.Success)
-                return BadRequest(re);
-
-            return Ok("Thành công");
-        }
-        [HttpPost("LoginAdmin")]
-        public async Task<IActionResult> LoginAdmin([FromForm] LoginForm loginModel)
-        {
-            var result = await _accountServices.LoginAdminAsync(loginModel);
-
-            if (result == MessageStatus.Empty.ToString())
-            {
-                return BadRequest("UserManager is not available.");
-            }
-            else if (result == MessageStatus.AccountNotFound.ToString())
-            {
-                return BadRequest("Account not found.");
-            }
-
-            return Ok(result);
-        }
-        [HttpPost("AddAccount")]
-        public async Task<IActionResult> AddAccount([FromForm] AccountForm account)
-        {
-            var result = await _accountServices.AddAccountAsync(account);
-
-            if (result == MessageStatus.EmailOrUsernameAlreadyExists)
-            {
-                return Conflict("Email or username already exists.");
-            }
-            else if (result == MessageStatus.Success)
-            {
-                return Ok("Account added successfully.");
-            }
-            else
-            {
-                return BadRequest("Failed to add account.");
-            }
-        }
-
-
-        [HttpPut("UpdateUserAccount/{userId}")]
-        public async Task<IActionResult> UpdateUserAccount(string userId, [FromForm] AccountForm accountModel)
-        {
-            var result = await _accountServices.UpdateUserAccountAsync(userId, accountModel);
-
-            if (result == MessageStatus.AccountNotFound)
-            {
-                return NotFound("Account not found.");
-            }
-            else if (result == MessageStatus.Success)
-            {
-                return Ok("Account updated successfully.");
-            }
-            else
-            {
-                return BadRequest("Failed to update account.");
-            }
-        }
-        [HttpPut("RemoveUserAccount/{userID}")]
-        public async Task<IActionResult> RemoveUserAccount(string userID)
-        {
-            try
-            {
-                var result = await _accountServices.RemoveUserAccountAsync(userID);
-
-                if (result == MessageStatus.Success)
-                {
-                    return Ok();
-                }
-                else if (result == MessageStatus.AccountNotFound)
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    return BadRequest();
-                }
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-        }
-
-        [HttpGet("GetAllUser")]
-        public async Task<IActionResult> GetAllUser([FromQuery] Pagination page)
-        {
-            try
-            {
-                var result = await _accountServices.GetAllUserAsync(page);
-                return Ok(result);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-        }
-        #endregion
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {

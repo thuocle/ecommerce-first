@@ -1,33 +1,12 @@
 ﻿using API_Test1.Services.ProductServices.ProductReviewServices;
 namespace API_Test1.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductReviewController : ControllerBase
     {
         private readonly IProductReviewServices _productReviewServices;
-
-        public ProductReviewController(IProductReviewServices productReviewServices)
-        {
-            _productReviewServices = productReviewServices;
-        }
-
-        [HttpGet("{productId}")]
-        public async Task<IActionResult> GetAllProductReviews(int productId, [FromQuery] Pagination page)
-        {
-            var productReviews = await _productReviewServices.GetAllProductReviews(productId, page);
-            return Ok(productReviews);
-        }
-
-        [HttpPost("{reviewId}/status")]
-        public async Task<IActionResult> UpdateProductReviewStatus(int reviewId, [FromForm] int status)
-        {
-            var result = await _productReviewServices.UpdateProductReviewStatus(reviewId, status);
-            if (result == MessageStatus.Success)
-                return Ok();
-            else
-                return BadRequest();
-        }
 
         [HttpPost("{productId}")]
         public async Task<IActionResult> AddProductReview(int productId, [FromForm] ReviewProductForm reviewProduct)

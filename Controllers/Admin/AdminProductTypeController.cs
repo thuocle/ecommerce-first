@@ -1,13 +1,14 @@
 ﻿using API_Test1.Services.ProductServices.ProductTypeServices.ProductTypeServices;
-namespace API_Test1.Controllers
+namespace API_Test1.Controllers.Admin
 {
-    [Route("api/[controller]")]
+    [Authorize(Roles =UserRoles.Admin)]
+    [Route("api/admin/product-type")]
     [ApiController]
-    public class ProductTypeController : ControllerBase
+    public class AdminProductTypeController : ControllerBase
     {
         private readonly IProductTypeServices _productTypeServices;
 
-        public ProductTypeController(IProductTypeServices productTypeServices)
+        public AdminProductTypeController(IProductTypeServices productTypeServices)
         {
             _productTypeServices = productTypeServices;
         }

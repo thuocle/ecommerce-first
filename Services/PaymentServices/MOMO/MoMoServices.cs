@@ -1,6 +1,5 @@
 ﻿using API_Test1.Services.OrderServices;
 using API_Test1.Services.PaymentServices.MOMO.Model;
-using Microsoft.DotNet.Scaffolding.Shared.CodeModifier.CodeChange;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -20,7 +19,7 @@ namespace API_Test1.Services.PaymentServices.MOMO
         {
             var model = await _orderServices.CreateOrder(orderInfo);
             /*model.OrderId = DateTime.UtcNow.AddHours(7).Ticks.ToString();*/
-            model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: Thanh toan qua " + orderInfo.PaymentID ;
+            model.OrderInfo = "Khách hàng: " + model.FullName + ". Nội dung: Thanh toan qua MoMoPay" ;
 
             var rawData = $"partnerCode={_options.Value.PartnerCode}&accessKey={_options.Value.AccessKey}&requestId={model.OrderId}&amount={model.Amount}&orderId={model.OrderId}&orderInfo={model.OrderInfo}&returnUrl={_options.Value.ReturnUrl}&notifyUrl={_options.Value.NotifyUrl}&extraData=";
 

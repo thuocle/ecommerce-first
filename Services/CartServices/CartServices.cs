@@ -93,6 +93,7 @@ namespace API_Test1.Services.CartServices
             if (existingItem != null && existingItem.Quantity > 1)
             {
                 existingItem.Quantity--;
+                existingItem.OriginalPrice = OriginalPriceOnProduct(existingItem.Quantity, existingItem.Price);
                 UpdateCartItems(cartItems);
             }
             return MessageStatus.Success;
@@ -106,6 +107,7 @@ namespace API_Test1.Services.CartServices
             if (existingItem != null)
             {
                 existingItem.Quantity++;
+                existingItem.OriginalPrice = OriginalPriceOnProduct(existingItem.Quantity, existingItem.Price);
                 UpdateCartItems(cartItems);
             }
             return MessageStatus.Success;

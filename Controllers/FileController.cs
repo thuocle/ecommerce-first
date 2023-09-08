@@ -12,10 +12,10 @@ namespace API_Test1.Controllers
         {
             _fileServices = fileServices;
         }
-        [HttpPost("upload")]
+        /*[HttpPost("upload")]
         public async Task<IActionResult> UpLoad(IFormFile file)
         {
             return Ok(await _fileServices.UploadImage(file));
-        }
+        }*/
     }
 }

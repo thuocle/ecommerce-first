@@ -13,37 +13,8 @@ namespace API_Test1.Controllers
         {
             _orderService = orderService;
         }
-        //admin
-        [HttpGet("admin/all-order")]
-        public async Task<IActionResult> GetAllOrders([FromQuery] Pagination page)
-        {
-            var orders = await _orderService.GetAllOrder(page);
-            return Ok(orders);
-        }
-
-        [HttpGet("admin/details")]
-        public async Task<IActionResult> GetAllOrderDetails([FromQuery] Pagination page)
-        {
-            var orderDetails = await _orderService.GetAllOrderDetail(page);
-            return Ok(orderDetails);
-        }
-        [HttpPost("admin/update-status")]
-        public async Task<IActionResult> UpdateStatusOrderByAdmin(int statusId, string orderId)
-        {
-            var result = await _orderService.UpdateStatusOrderByAdmin(statusId, orderId);
-
-            if (result == MessageStatus.Success)
-            {
-                return Ok("Order status updated successfully.");
-            }
-            else
-            {
-                return BadRequest("Failed to update order status.");
-            }
-        }
-
-
         //other 
+        [Authorize]
         [HttpPost("update-status")]
         public async Task<IActionResult> UpdateStatusOrderByUser(int statusId, string orderId)
         {
@@ -73,7 +44,7 @@ namespace API_Test1.Controllers
                 return BadRequest("Failed to order .");
             }
         }
-
+        [Authorize]
         // GetOrderDetail API
         [HttpGet("{orderID}/details")]
         public async Task<IActionResult> GetOrderDetail(string orderID)
@@ -91,7 +62,7 @@ namespace API_Test1.Controllers
         }
 
         // UpdateStatusOrderByUser API
-
+        [Authorize]
         // GetAllOrderForUser API
         [HttpGet("order-list")]
         public async Task<IActionResult> GetAllOrderForUser([FromQuery] Pagination page, string userId)
@@ -101,6 +72,7 @@ namespace API_Test1.Controllers
             return Ok(pageInfo);
         }
 
+        [Authorize]
         // FindOrderById API
         [HttpGet("{orderID}")]
         public async Task<IActionResult> FindOrderById(string orderID)

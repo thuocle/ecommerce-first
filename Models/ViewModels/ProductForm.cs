@@ -8,13 +8,13 @@
         [Required]
         public string? NameProduct { get; set; }
         [Required]
-        public double? Price { get; set; }
+        public double Price { get; set; }
         [Required]
         public string? Title { get; set; }
         [Required]
-        public int? Discount { get; set; }
+        public int Discount { get; set; }
         [Required]
-        public int? Quantity { get; set; }
+        public int Quantity { get; set; }
         public int? Status { get; set; }
         [Required]
         public IFormFile? AvtarProduct { get; set; }

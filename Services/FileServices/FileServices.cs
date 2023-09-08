@@ -17,7 +17,7 @@ namespace API_Test1.Services.FileServices
 
         private DriveService _driveService;
 
-        public FileServices()
+        private DriveService GetDriveService()
         {
             UserCredential credential;
 
@@ -32,7 +32,7 @@ namespace API_Test1.Services.FileServices
                     new FileDataStore(credPath, true)).Result;
             }
 
-            _driveService = new DriveService(new BaseClientService.Initializer()
+            return new DriveService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = ApplicationName
@@ -41,30 +41,33 @@ namespace API_Test1.Services.FileServices
 
         public async Task<string> UploadImage(IFormFile file)
         {
-            var fileMetadata = new File
+            using (var _driveService = GetDriveService())
             {
-                Name = file.FileName,
-                Parents = new List<string> { DestinationFolderId }
-            };
-
-            using (var stream = new MemoryStream())
-            {
-                await file.CopyToAsync(stream);
-
-                var request = _driveService.Files.Create(fileMetadata, stream, file.ContentType);
-                request.Fields = "webViewLink";
-
-                var uploadProgress = await request.UploadAsync();
-
-                if (uploadProgress.Status == UploadStatus.Completed)
+                var fileMetadata = new File
                 {
-                    var uploadedFile = request.ResponseBody;
-                    return uploadedFile.WebViewLink;
-                }
-                else
+                    Name = file.FileName,
+                    Parents = new List<string> { DestinationFolderId }
+                };
+
+                using (var stream = new MemoryStream())
                 {
-                    // Xử lý lỗi tải lên tại đây nếu cần thiết
-                    return null;
+                    await file.CopyToAsync(stream);
+
+                    var request = _driveService.Files.Create(fileMetadata, stream, file.ContentType);
+                    request.Fields = "webViewLink";
+
+                    var uploadProgress = await request.UploadAsync();
+
+                    if (uploadProgress.Status == UploadStatus.Completed)
+                    {
+                        var uploadedFile = request.ResponseBody;
+                        return uploadedFile.WebViewLink;
+                    }
+                    else
+                    {
+                        // Xử lý lỗi tải lên tại đây nếu cần thiết
+                        return null;
+                    }
                 }
             }
         }

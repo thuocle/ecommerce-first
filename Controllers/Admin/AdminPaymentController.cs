@@ -1,25 +1,27 @@
 ﻿using API_Test1.Services.PaymentServices;
 
-namespace API_Test1.Controllers
+namespace API_Test1.Controllers.Admin
 {
-    [Route("api/[controller]")]
+    [Authorize(Roles = UserRoles.Admin)]
+
+    [Route("api/admin")]
     [ApiController]
-    public class PaymentController : ControllerBase
+    public class AdminPaymentController : ControllerBase
     {
         private readonly IPaymentServices _paymentServices;
 
-        public PaymentController( IPaymentServices paymentServices)
+        public AdminPaymentController(IPaymentServices paymentServices)
         {
             _paymentServices = paymentServices;
         }
-        [HttpGet]
+        [HttpGet("get-payment-methods")]
         public async Task<IActionResult> GetPaymentMethods([FromQuery] Pagination pagination)
         {
             var paymentMethods = await _paymentServices.GetPaymentMethods(pagination);
             return Ok(paymentMethods);
         }
         // API: Tạo phương thức thanh toán mới
-        [HttpPost]
+        [HttpPost("add-payment-methods")]
         public async Task<IActionResult> CreatePaymentMethod([FromForm] Payments paymentMethod)
         {
             var messageStatus = await _paymentServices.CreatePaymentMethod(paymentMethod);
@@ -35,7 +37,7 @@ namespace API_Test1.Controllers
         }
 
         // API: Cập nhật phương thức thanh toán
-        [HttpPut("{paymentMethodId}")]
+        [HttpPut("update-payment-methods/{paymentMethodId}")]
         public async Task<IActionResult> UpdatePaymentMethod(int paymentMethodId, [FromForm] Payments updatedPaymentMethod)
         {
             var messageStatus = await _paymentServices.UpdatePaymentMethod(paymentMethodId, updatedPaymentMethod);
@@ -50,9 +52,8 @@ namespace API_Test1.Controllers
             }
         }
 
-
         // API: Xóa phương thức thanh toán
-        [HttpDelete("{paymentMethodId}")]
+        [HttpDelete("delete-payment-methods/{paymentMethodId}")]
         public async Task<IActionResult> DeletePaymentMethod(int paymentMethodId)
         {
             var messageStatus = await _paymentServices.DeletePaymentMethod(paymentMethodId);
